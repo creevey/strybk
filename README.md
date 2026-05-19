@@ -20,17 +20,16 @@ The config module should export a `StrybkConfig` object, typically as the defaul
 
 ## Local Linking
 
-Build the package and register the local binary:
+Build the package:
 
 ```sh
 yarn build
-yarn link
 ```
 
-Link it into another project:
+Link it from the consumer project using the path to this package:
 
 ```sh
-yarn link strybk
+yarn link /path/to/strybk
 ```
 
-When you are done testing locally, remove the link from the consumer project with `yarn unlink strybk` and from this package with `yarn unlink`.
+Use `yarn unlink /path/to/strybk` in the consumer project when you are done testing locally.
