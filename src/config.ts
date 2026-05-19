@@ -1,9 +1,25 @@
-export type StorybookGlobals = Readonly<Record<string, string | number | boolean | null>>;
+export interface StorybookGlobals {
+  [key: string]: string | number | boolean | null | undefined;
+}
 
-export type StrybkConfig = Readonly<{
-  storybookUrl?: string;
-  storyGlobs?: readonly string[];
-  globals?: StorybookGlobals;
-}>;
+export interface StrybkConfig {
+  storybookUrl: string;
+  storyGlobs: string[];
+  resolveSpecPath: (args: { storyFilePath: string }) => string;
+  resolveHarnessImports: (args: { outputPath: string }) => {
+    fixturesImport: string;
+    switchStoryImport: string;
+  };
+  generatedRegionName?: string;
+  deleteOrphans?: boolean;
+  metadataExtractors?: ('creevey')[];
+}
 
-export const defineConfig = <TConfig extends StrybkConfig>(config: TConfig): TConfig => config;
+export function defineConfig(config: StrybkConfig): StrybkConfig {
+  return {
+    generatedRegionName: 'auto-screenshots',
+    deleteOrphans: true,
+    metadataExtractors: [],
+    ...config,
+  };
+}
