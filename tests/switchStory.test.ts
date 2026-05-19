@@ -46,10 +46,10 @@ const createTestChannel = (
   };
 };
 
-const createPage = (channel: TestChannel): Page => {
+const createPage = (channel: TestChannel, fontsReady: Promise<void> = Promise.resolve()): Page => {
   const documentShim = {
     fonts: {
-      ready: Promise.resolve(),
+      ready: fontsReady,
     },
   };
   const windowShim = {
@@ -89,6 +89,23 @@ describe('switchStory', () => {
 
     const channel = createTestChannel(null);
     const page = createPage(channel);
+    let rejection: unknown;
+
+    void switchStory(page, 'button--default').catch((error: unknown) => {
+      rejection = error;
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await Promise.resolve();
+
+    expect(rejection).toEqual(new Error("Failed to select story 'button--default': Story switch timeout"));
+  });
+
+  it('rejects with the same timeout when font readiness never settles after a story success event', async () => {
+    vi.useFakeTimers();
+
+    const channel = createTestChannel('storyRendered');
+    const page = createPage(channel, new Promise<void>(() => {}));
     let rejection: unknown;
 
     void switchStory(page, 'button--default').catch((error: unknown) => {

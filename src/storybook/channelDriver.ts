@@ -45,11 +45,18 @@ export function createChannelDriver(): StorybookDriver {
           };
 
           const handleSuccess = (): void => {
-            settle(() => {
-              void (document.fonts?.ready ?? Promise.resolve())
-                .then(() => resolve())
-                .catch((error: unknown) => reject(error));
-            });
+            cleanup();
+            void (document.fonts?.ready ?? Promise.resolve())
+              .then(() => {
+                settle(() => {
+                  resolve();
+                });
+              })
+              .catch((error: unknown) => {
+                settle(() => {
+                  reject(error);
+                });
+              });
           };
 
           const handleError = (payload: unknown): void => {
