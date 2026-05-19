@@ -2,8 +2,9 @@ import { createStrybkFixtures } from '../src/playwright/index.js';
 
 const fixtures = createStrybkFixtures();
 
-fixtures.test('sharedPage fixture is typed', async ({ sharedPage }) => {
+fixtures.test('sharedPage fixture preserves built-in Playwright fixtures', async ({ sharedPage, browserName }) => {
   void sharedPage;
+  void browserName;
 });
 
 fixtures.test('internal worker fixtures stay private', async ({

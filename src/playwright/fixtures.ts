@@ -1,4 +1,14 @@
-import { expect, test as base, type Page, type TestInfo, type TestType } from '@playwright/test';
+import {
+  expect,
+  test as base,
+  type Page,
+  type PlaywrightTestArgs,
+  type PlaywrightTestOptions,
+  type PlaywrightWorkerArgs,
+  type PlaywrightWorkerOptions,
+  type TestInfo,
+  type TestType,
+} from '@playwright/test';
 
 import type { StorybookGlobals } from '../config.js';
 import { createChannelDriver } from '../storybook/channelDriver.js';
@@ -11,9 +21,14 @@ type StrybkWorkerFixtures = {
   _workerPage: Page;
 };
 
+type PublicStrybkTest = TestType<
+  PlaywrightTestArgs & PlaywrightTestOptions & StrybkFixtures,
+  PlaywrightWorkerArgs & PlaywrightWorkerOptions
+>;
+
 type StrybkFixtureHandles = {
   expect: typeof expect;
-  test: TestType<StrybkFixtures, {}>;
+  test: PublicStrybkTest;
 };
 
 type MetadataWithStorybookGlobals = {
@@ -100,6 +115,6 @@ export const createStrybkFixtures = (): StrybkFixtureHandles => {
 
   return {
     expect,
-    test: test as TestType<StrybkFixtures, {}>,
+    test: test as PublicStrybkTest,
   };
 };
