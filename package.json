@@ -2,6 +2,7 @@
   "name": "strybk",
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "yarn@4.6.0",
   "bin": "./dist/cli.js",
   "exports": {
     ".": "./dist/index.js",
