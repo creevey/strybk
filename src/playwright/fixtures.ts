@@ -1,17 +1,16 @@
-import {
-  expect,
-  test as base,
-  type Page,
-  type PlaywrightTestArgs,
-  type PlaywrightTestOptions,
-  type PlaywrightWorkerArgs,
-  type PlaywrightWorkerOptions,
-  type TestInfo,
-  type TestType,
+import type {
+  Page,
+  PlaywrightTestArgs,
+  PlaywrightTestOptions,
+  PlaywrightWorkerArgs,
+  PlaywrightWorkerOptions,
+  TestInfo,
+  TestType,
 } from '@playwright/test';
 
 import type { StorybookGlobals } from '../config.js';
 import { createChannelDriver } from '../storybook/channelDriver.js';
+import { loadPlaywrightTestRuntime } from './runtime.js';
 
 type StrybkFixtures = {
   sharedPage: Page;
@@ -27,7 +26,7 @@ type PublicStrybkTest = TestType<
 >;
 
 type StrybkFixtureHandles = {
-  expect: typeof expect;
+  expect: typeof import('@playwright/test').expect;
   test: PublicStrybkTest;
 };
 
@@ -38,12 +37,16 @@ type MetadataWithStorybookGlobals = {
 const animationDisablerStyles = [
   '*, *::before, *::after {',
   '  animation: none !important;',
+  '  caret-color: transparent !important;',
+  '  cursor: none !important;',
   '  transition: none !important;',
   '}',
   'html {',
   '  scroll-behavior: auto !important;',
   '}',
 ].join('\n');
+
+const storybookReadyTimeoutMs = 10_000;
 
 const channelDriver = createChannelDriver();
 
@@ -81,16 +84,19 @@ const resetSharedPage = async (page: Page): Promise<void> => {
 
 const restoreSharedPageBaseline = async (page: Page, baseURL: string | undefined): Promise<void> => {
   await page.goto(resolveIframeUrl(baseURL));
+  await page.waitForSelector('#storybook-root', { state: 'attached', timeout: storybookReadyTimeoutMs });
   await disableAnimations(page);
   await resetSharedPage(page);
 };
 
 export const createStrybkFixtures = (): StrybkFixtureHandles => {
+  const { expect, test: base } = loadPlaywrightTestRuntime();
   const test = base.extend<StrybkFixtures, StrybkWorkerFixtures>({
     _workerPage: [
       async ({ browser }, use, workerInfo) => {
         const context = await browser.newContext({
           baseURL: workerInfo.project.use.baseURL,
+          viewport: workerInfo.project.use.viewport,
         });
         const page = await context.newPage();
 

@@ -12,12 +12,11 @@ interface StorybookWindow extends Window {
   __STORYBOOK_ADDONS_CHANNEL__?: StorybookChannel;
 }
 
-const storySwitchTimeoutMs = 10_000;
-
 export function createChannelDriver(): StorybookDriver {
   return {
     async selectStory(page: Page, storyId: string): Promise<void> {
       await page.evaluate(async (currentStoryId) => {
+        const storySwitchTimeoutMs = 10_000;
         const channel = (window as StorybookWindow).__STORYBOOK_ADDONS_CHANNEL__;
 
         if (!channel) {

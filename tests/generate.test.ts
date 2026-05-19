@@ -213,4 +213,103 @@ describe('generateScreenshots', () => {
     expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'toast--warning')");
     expect(outputs[0]?.content).toContain("test('manual hover'");
   });
+
+  it('filters per-story creevey skips by story id when Storybook index entries omit exportName', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'strybk-generate-'));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, 'components', '__stories__', 'Baseline.stories.tsx');
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      [
+        "export default { title: 'Baseline' };",
+        'export const ButtonWithoutContentInFlex = {};',
+        'ButtonWithoutContentInFlex.parameters = { creevey: { skip: true } };',
+        'export const InputWithButton = {};',
+      ].join('\n'),
+    );
+
+    const config = defineConfig({
+      storybookUrl: 'http://localhost:6060',
+      storyGlobs: [join(tempDir, 'components', '**', '*.stories.tsx')],
+      metadataExtractors: ['creevey'],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace('/__stories__/', '/__screenshots__/').replace('.stories.tsx', '.screenshots.spec.ts'),
+      resolveHarnessImports: () => ({
+        fixturesImport: '../../../__screenshots__/fixtures',
+        switchStoryImport: '../../../__screenshots__/switchStory',
+      }),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      indexEntries: [
+        { id: 'baseline--button-without-content-in-flex', title: 'Baseline', name: 'Button without content in flex-container' },
+        { id: 'baseline--input-with-button', title: 'Baseline', name: 'Input with button' },
+      ],
+      readExistingFile: () => null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'baseline--button-without-content-in-flex')");
+    expect(outputs[0]?.content).toContain("await switchStory(sharedPage, 'baseline--input-with-button')");
+  });
+
+  it('omits a fully skipped existing spec when no manual region remains', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'strybk-generate-'));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, 'components', '__stories__', 'Center.stories.tsx');
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      [
+        'export default {',
+        "  title: 'Center',",
+        '  parameters: { creevey: { skip: true } },',
+        '};',
+        'export const Simple = {};',
+      ].join('\n'),
+    );
+
+    const outputPath = storyFilePath
+      .replace('/__stories__/', '/__screenshots__/')
+      .replace('.stories.tsx', '.screenshots.spec.ts');
+
+    const config = defineConfig({
+      storybookUrl: 'http://localhost:6060',
+      storyGlobs: [join(tempDir, 'components', '**', '*.stories.tsx')],
+      metadataExtractors: ['creevey'],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace('/__stories__/', '/__screenshots__/').replace('.stories.tsx', '.screenshots.spec.ts'),
+      resolveHarnessImports: () => ({
+        fixturesImport: '../../../__screenshots__/fixtures',
+        switchStoryImport: '../../../__screenshots__/switchStory',
+      }),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      indexEntries: [{ id: 'center--simple', title: 'Center', name: 'simple' }],
+      readExistingFile: (filePath) =>
+        filePath === outputPath
+          ? [
+              "import { test, expect } from '../../../__screenshots__/fixtures';",
+              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              '',
+              '// @generated-begin auto-screenshots',
+              "test.describe('Center', () => {",
+              "  test('simple', async ({ sharedPage }) => {",
+              "    await switchStory(sharedPage, 'center--simple');",
+              '    await expect(sharedPage).toHaveScreenshot();',
+              '  });',
+              '});',
+              '// @generated-end auto-screenshots',
+            ].join('\n')
+          : null,
+    });
+
+    expect(outputs).toHaveLength(0);
+  });
 });
