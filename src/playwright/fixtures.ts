@@ -59,7 +59,7 @@ const resetSharedPage = async (page: Page): Promise<void> => {
   });
 };
 
-export const createStrybkFixtures = (): { test: typeof base; expect: typeof expect } => {
+export const createStrybkFixtures = () => {
   const test = base.extend<StrybkFixtures, StrybkWorkerFixtures>({
     _workerPage: [
       async ({ browser }, use, workerInfo) => {
