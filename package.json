@@ -3,13 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "packageManager": "yarn@4.6.0",
-  "bin": {
-    "strybk": "./dist/cli.js"
-  },
   "exports": {
-    ".": "./dist/index.js",
-    "./config": "./dist/config.js",
-    "./playwright": "./dist/playwright/index.js"
+    ".": "./dist/src/index.js",
+    "./config": "./dist/src/config.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
