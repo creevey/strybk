@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import type { StrybkConfig } from '../config.js';
 
 import { discoverStoryFiles } from './discover.js';
+import { extractCreeveyMetadata } from './metadata.js';
 import { renderScreenshotSpec } from './render.js';
 
 export interface StoryIndexEntry {
@@ -8,6 +11,7 @@ export interface StoryIndexEntry {
   title: string;
   name: string;
   importPath?: string;
+  exportName?: string;
 }
 
 const escapeForRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -20,11 +24,16 @@ export async function generateScreenshots(args: {
   const storyFiles = await discoverStoryFiles(args.config.storyGlobs);
   const generatedRegionName = args.config.generatedRegionName ?? 'auto-screenshots';
   const manualRegionPattern = new RegExp(`// @generated-end ${escapeForRegExp(generatedRegionName)}\\s*([\\s\\S]*)$`);
+  const shouldExtractCreeveyMetadata = args.config.metadataExtractors?.includes('creevey') ?? false;
 
   return storyFiles.flatMap((storyFile) => {
     const stories = args.indexEntries.filter((entry) => entry.title === storyFile.title);
+    const storyMetadata = shouldExtractCreeveyMetadata
+      ? extractCreeveyMetadata(readFileSync(storyFile.filePath, 'utf8'))
+      : {};
+    const filteredStories = stories.filter((story) => !story.exportName || storyMetadata[story.exportName]?.skip !== true);
 
-    if (stories.length === 0) {
+    if (filteredStories.length === 0) {
       return [];
     }
 
@@ -41,7 +50,7 @@ export async function generateScreenshots(args: {
           fixturesImport: harnessImports.fixturesImport,
           switchStoryImport: harnessImports.switchStoryImport,
           title: storyFile.title,
-          stories,
+          stories: filteredStories,
           manualRegion,
         }),
       },
