@@ -12,6 +12,8 @@ interface StorybookWindow extends Window {
   __STORYBOOK_ADDONS_CHANNEL__?: StorybookChannel;
 }
 
+const storySwitchTimeoutMs = 10_000;
+
 export function createChannelDriver(): StorybookDriver {
   return {
     async selectStory(page: Page, storyId: string): Promise<void> {
@@ -23,29 +25,49 @@ export function createChannelDriver(): StorybookDriver {
         }
 
         await new Promise<void>((resolve, reject) => {
+          let settled = false;
+
           const cleanup = (): void => {
             channel.off('storyRendered', handleSuccess);
             channel.off('storyUnchanged', handleSuccess);
             channel.off('storyErrored', handleError);
           };
 
-          const handleSuccess = (): void => {
+          const settle = (callback: () => void): void => {
+            if (settled) {
+              return;
+            }
+
+            settled = true;
+            clearTimeout(timeout);
             cleanup();
-            void (document.fonts?.ready ?? Promise.resolve())
-              .then(() => resolve())
-              .catch((error: unknown) => reject(error));
+            callback();
+          };
+
+          const handleSuccess = (): void => {
+            settle(() => {
+              void (document.fonts?.ready ?? Promise.resolve())
+                .then(() => resolve())
+                .catch((error: unknown) => reject(error));
+            });
           };
 
           const handleError = (payload: unknown): void => {
-            cleanup();
-
             const message =
               typeof payload === 'object' && payload !== null && 'description' in payload && typeof payload.description === 'string'
                 ? payload.description
                 : `Storybook failed to render story ${currentStoryId}`;
 
-            reject(new Error(message));
+            settle(() => {
+              reject(new Error(message));
+            });
           };
+
+          const timeout = setTimeout(() => {
+            settle(() => {
+              reject(new Error(`Failed to select story '${currentStoryId}': Story switch timeout`));
+            });
+          }, storySwitchTimeoutMs);
 
           channel.on('storyRendered', handleSuccess);
           channel.on('storyUnchanged', handleSuccess);

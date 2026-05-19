@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { switchStory } from '../src/playwright/switchStory.js';
 
@@ -14,7 +14,10 @@ interface TestChannel {
   emissions: Array<{ eventName: ChannelEventName; payload: unknown }>;
 }
 
-const createTestChannel = (successEventName: 'storyRendered' | 'storyUnchanged'): TestChannel => {
+const createTestChannel = (
+  nextEventName: 'storyRendered' | 'storyUnchanged' | 'storyErrored' | null,
+  nextPayload: unknown = undefined,
+): TestChannel => {
   const listeners = new Map<ChannelEventName, Set<ChannelListener>>();
   const emissions: Array<{ eventName: ChannelEventName; payload: unknown }> = [];
 
@@ -36,8 +39,8 @@ const createTestChannel = (successEventName: 'storyRendered' | 'storyUnchanged')
       emissions.push({ eventName, payload });
       notify(eventName, payload);
 
-      if (eventName === 'setCurrentStory') {
-        notify(successEventName, payload);
+      if (eventName === 'setCurrentStory' && nextEventName) {
+        notify(nextEventName, nextPayload);
       }
     },
   };
@@ -65,6 +68,10 @@ const createPage = (channel: TestChannel): Page => {
   } as Page;
 };
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('switchStory', () => {
   it.each(['storyRendered', 'storyUnchanged'] as const)('resolves when Storybook emits %s', async (eventName) => {
     const channel = createTestChannel(eventName);
@@ -75,5 +82,29 @@ describe('switchStory', () => {
       eventName: 'setCurrentStory',
       payload: { storyId: 'button--default' },
     });
+  });
+
+  it('rejects with a targeted timeout when Storybook does not emit a story event', async () => {
+    vi.useFakeTimers();
+
+    const channel = createTestChannel(null);
+    const page = createPage(channel);
+    let rejection: unknown;
+
+    void switchStory(page, 'button--default').catch((error: unknown) => {
+      rejection = error;
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await Promise.resolve();
+
+    expect(rejection).toEqual(new Error("Failed to select story 'button--default': Story switch timeout"));
+  });
+
+  it('rejects with the propagated Storybook error text when storyErrored fires', async () => {
+    const channel = createTestChannel('storyErrored', { description: 'Missing required loader data' });
+    const page = createPage(channel);
+
+    await expect(switchStory(page, 'button--default')).rejects.toThrow('Missing required loader data');
   });
 });
