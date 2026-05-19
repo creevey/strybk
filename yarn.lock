@@ -1211,6 +1211,8 @@ __metadata:
     vitest: "npm:^3.2.4"
   peerDependencies:
     "@playwright/test": ">=1.59.0"
+  bin:
+    strybk: ./dist/src/cli.js
   languageName: unknown
   linkType: soft
 
