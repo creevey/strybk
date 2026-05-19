@@ -3,9 +3,13 @@ export interface StoryPolicy {
 }
 
 export function extractCreeveyMetadata(source: string): Record<string, StoryPolicy> {
-  const matches = source.matchAll(/(\w+)\.parameters\s*=\s*\{\s*creevey:\s*\{\s*skip:\s*(true|false)/g);
+  const parameterAssignments = source.matchAll(/(\w+)\.parameters\s*=\s*\{([\s\S]*?)\}\s*;/g);
 
   return Object.fromEntries(
-    Array.from(matches, (match) => [match[1], { skip: match[2] === 'true' }]),
+    Array.from(parameterAssignments).flatMap((match) => {
+      const skipMatch = match[2].match(/\bcreevey\s*:\s*\{[\s\S]*?\bskip\s*:\s*(true|false)\b/);
+
+      return skipMatch ? [[match[1], { skip: skipMatch[1] === 'true' }]] : [];
+    }),
   );
 }

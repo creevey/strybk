@@ -32,13 +32,13 @@ export async function generateScreenshots(args: {
       ? extractCreeveyMetadata(readFileSync(storyFile.filePath, 'utf8'))
       : {};
     const filteredStories = stories.filter((story) => !story.exportName || storyMetadata[story.exportName]?.skip !== true);
+    const outputPath = args.config.resolveSpecPath({ storyFilePath: storyFile.filePath });
+    const existing = args.readExistingFile?.(outputPath) ?? null;
 
-    if (filteredStories.length === 0) {
+    if (filteredStories.length === 0 && existing === null) {
       return [];
     }
 
-    const outputPath = args.config.resolveSpecPath({ storyFilePath: storyFile.filePath });
-    const existing = args.readExistingFile?.(outputPath) ?? null;
     const manualRegion = existing?.match(manualRegionPattern)?.[1]?.trim() ?? '';
     const harnessImports = args.config.resolveHarnessImports({ outputPath });
 

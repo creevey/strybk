@@ -1,7 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { defineConfig, type StrybkConfig } from '../src/config.js';
+import { generateScreenshots } from '../src/generate/index.js';
 import { renderScreenshotSpec } from '../src/generate/render.js';
+
+const temporaryDirectories: string[] = [];
+
+afterEach(() => {
+  while (temporaryDirectories.length > 0) {
+    rmSync(temporaryDirectories.pop() as string, { recursive: true, force: true });
+  }
+});
 
 describe('renderScreenshotSpec', () => {
   it('renders generated tests and preserves the manual region', () => {
@@ -57,5 +70,75 @@ describe('renderScreenshotSpec', () => {
 
     expect(content).toContain('// @generated-begin auto-screenshots');
     expect(content).toContain('// @generated-end auto-screenshots');
+  });
+});
+
+describe('generateScreenshots', () => {
+  it('keeps an output entry for an existing spec when creevey metadata filters out every story', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'strybk-generate-'));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, 'components', '__stories__', 'Button.stories.tsx');
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      [
+        "export default { title: 'Button' };",
+        'export const Default = {};',
+        'Default.parameters = {',
+        '  viewport: { defaultViewport: \"iphone\" },',
+        '  creevey: { skip: true },',
+        '};',
+      ].join('\n'),
+    );
+
+    const outputPath = storyFilePath
+      .replace('/__stories__/', '/__screenshots__/')
+      .replace('.stories.tsx', '.screenshots.spec.ts');
+
+    const config = defineConfig({
+      storybookUrl: 'http://localhost:6060',
+      storyGlobs: [join(tempDir, 'components', '**', '*.stories.tsx')],
+      generatedRegionName: 'custom-generated-region',
+      metadataExtractors: ['creevey'],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace('/__stories__/', '/__screenshots__/').replace('.stories.tsx', '.screenshots.spec.ts'),
+      resolveHarnessImports: () => ({
+        fixturesImport: '../../../__screenshots__/fixtures',
+        switchStoryImport: '../../../__screenshots__/switchStory',
+      }),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      indexEntries: [{ id: 'button--default', title: 'Button', name: 'Default', exportName: 'Default' }],
+      readExistingFile: (filePath) =>
+        filePath === outputPath
+          ? [
+              "import { test, expect } from '../../../__screenshots__/fixtures';",
+              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              '',
+              '// @generated-begin custom-generated-region',
+              "test.describe('Button', () => {",
+              "  test('Default', async ({ sharedPage }) => {",
+              "    await switchStory(sharedPage, 'button--default');",
+              '    await expect(sharedPage).toHaveScreenshot();',
+              '  });',
+              '});',
+              '// @generated-end custom-generated-region',
+              '',
+              "test('manual hover', async ({ sharedPage }) => {",
+              '  await expect(sharedPage).toHaveScreenshot();',
+              '});',
+            ].join('\n')
+          : null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.outputPath).toBe(outputPath);
+    expect(outputs[0]?.content).toContain('// @generated-begin custom-generated-region');
+    expect(outputs[0]?.content).toContain("test.describe('Button', () => {\n\n});");
+    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'button--default')");
+    expect(outputs[0]?.content).toContain("test('manual hover'");
   });
 });

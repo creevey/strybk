@@ -15,4 +15,20 @@ describe('extractCreeveyMetadata', () => {
     expect(metadata.Default?.skip).toBe(true);
     expect(metadata.Active?.skip).toBeUndefined();
   });
+
+  it('marks stories with creevey skip when parameters include sibling fields before creevey', () => {
+    const source = `
+      export const MobileSimple = {};
+      MobileSimple.parameters = {
+        viewport: {
+          defaultViewport: 'iphone',
+        },
+        creevey: { skip: true },
+      };
+    `;
+
+    const metadata = extractCreeveyMetadata(source);
+
+    expect(metadata.MobileSimple?.skip).toBe(true);
+  });
 });
