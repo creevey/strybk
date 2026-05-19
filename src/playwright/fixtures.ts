@@ -1,4 +1,4 @@
-import { expect, test as base, type Page, type TestInfo } from '@playwright/test';
+import { expect, test as base, type Page, type TestInfo, type TestType } from '@playwright/test';
 
 import type { StorybookGlobals } from '../config.js';
 import { createChannelDriver } from '../storybook/channelDriver.js';
@@ -9,6 +9,11 @@ type StrybkFixtures = {
 
 type StrybkWorkerFixtures = {
   _workerPage: Page;
+};
+
+type StrybkFixtureHandles = {
+  expect: typeof expect;
+  test: TestType<StrybkFixtures, {}>;
 };
 
 type MetadataWithStorybookGlobals = {
@@ -59,7 +64,13 @@ const resetSharedPage = async (page: Page): Promise<void> => {
   });
 };
 
-export const createStrybkFixtures = () => {
+const restoreSharedPageBaseline = async (page: Page, baseURL: string | undefined): Promise<void> => {
+  await page.goto(resolveIframeUrl(baseURL));
+  await disableAnimations(page);
+  await resetSharedPage(page);
+};
+
+export const createStrybkFixtures = (): StrybkFixtureHandles => {
   const test = base.extend<StrybkFixtures, StrybkWorkerFixtures>({
     _workerPage: [
       async ({ browser }, use, workerInfo) => {
@@ -68,9 +79,7 @@ export const createStrybkFixtures = () => {
         });
         const page = await context.newPage();
 
-        await page.goto(resolveIframeUrl(workerInfo.project.use.baseURL));
-        await disableAnimations(page);
-        await resetSharedPage(page);
+        await restoreSharedPageBaseline(page, workerInfo.project.use.baseURL);
         await use(page);
         await context.close();
       },
@@ -85,9 +94,12 @@ export const createStrybkFixtures = () => {
 
       await resetSharedPage(_workerPage);
       await use(_workerPage);
-      await resetSharedPage(_workerPage);
+      await restoreSharedPageBaseline(_workerPage, testInfo.project.use.baseURL);
     },
   });
 
-  return { expect, test };
+  return {
+    expect,
+    test: test as TestType<StrybkFixtures, {}>,
+  };
 };
