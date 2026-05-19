@@ -1,20 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "bun:test";
 
-import { createStrybkFixtures, switchStory } from '../src/playwright/index.js';
+import { createStrybkFixtures, switchStory } from "../src/playwright/index.js";
 
-describe('playwright public surface', () => {
-  it('exports createStrybkFixtures with test and expect handles', () => {
+describe("playwright public surface", () => {
+  it("exports createStrybkFixtures with test and expect handles", () => {
     const fixtures = createStrybkFixtures();
 
-    expect(fixtures).toEqual(
-      expect.objectContaining({
-        expect: expect.any(Function),
-        test: expect.any(Function),
-      }),
-    );
+    expect(typeof fixtures.expect).toBe("function");
+    expect(typeof fixtures.test).toBe("function");
   });
 
-  it('re-exports switchStory', () => {
-    expect(switchStory).toEqual(expect.any(Function));
+  it("re-exports switchStory", () => {
+    expect(typeof switchStory).toBe("function");
   });
 });

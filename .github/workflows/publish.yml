@@ -1,0 +1,237 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump type"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Fetch current branch tip
+        run: git fetch origin "refs/heads/${{ github.ref_name }}:refs/remotes/origin/${{ github.ref_name }}" --force
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Setup Node.js for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run checks
+        run: bun run check
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate next version
+        id: version
+        env:
+          BUMP_TYPE: ${{ inputs.bump_type }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          CURRENT_SHA=$(git rev-parse HEAD)
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || printf '%s\n' 'v0.0.0')
+          LATEST_VERSION=${LATEST_TAG#v}
+          PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
+          IFS=. read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+
+          case "$BUMP_TYPE" in
+            major)
+              NORMAL_NEXT="$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NORMAL_NEXT="$MAJOR.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NORMAL_NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+              ;;
+            *)
+              printf 'Unsupported bump type: %s\n' "$BUMP_TYPE" >&2
+              exit 1
+              ;;
+          esac
+
+          BRANCH_REF="origin/$BRANCH_NAME"
+          BRANCH_TIP_SHA=$(git rev-parse "$BRANCH_REF")
+          BRANCH_TIP_PACKAGE_VERSION=$(git show "$BRANCH_REF:package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          EXPECTED_RELEASE_COMMIT="chore(release): bump to v$NORMAL_NEXT"
+          BRANCH_TIP_SUBJECT=$(git log -1 --format=%s "$BRANCH_REF")
+
+          if git show "$BRANCH_REF:CHANGELOG.md" 2>/dev/null | grep -Fq "## [$NORMAL_NEXT]"; then
+            BRANCH_TIP_HAS_CHANGELOG=true
+          else
+            BRANCH_TIP_HAS_CHANGELOG=false
+          fi
+
+          if [ "$BRANCH_TIP_SUBJECT" = "$EXPECTED_RELEASE_COMMIT" ]; then
+            BRANCH_TIP_IS_RELEASE_COMMIT=true
+          else
+            BRANCH_TIP_IS_RELEASE_COMMIT=false
+          fi
+
+          ADOPT_PREPARED=false
+          BRANCH_ADVANCED_UNRELATED=false
+          NEXT="$NORMAL_NEXT"
+
+          if [ "$RUN_ATTEMPT" -gt 1 ] && [ "$BRANCH_TIP_SHA" != "$CURRENT_SHA" ]; then
+            if [ "$BRANCH_TIP_PACKAGE_VERSION" = "$NORMAL_NEXT" ] && [ "$BRANCH_TIP_HAS_CHANGELOG" = true ] && [ "$BRANCH_TIP_IS_RELEASE_COMMIT" = true ]; then
+              ADOPT_PREPARED=true
+              NEXT="$BRANCH_TIP_PACKAGE_VERSION"
+            else
+              BRANCH_ADVANCED_UNRELATED=true
+            fi
+          fi
+
+          printf 'package_version=%s\n' "$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          printf 'branch_tip_sha=%s\n' "$BRANCH_TIP_SHA" >> "$GITHUB_OUTPUT"
+          printf 'branch_tip_package_version=%s\n' "$BRANCH_TIP_PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          printf 'branch_tip_has_changelog=%s\n' "$BRANCH_TIP_HAS_CHANGELOG" >> "$GITHUB_OUTPUT"
+          printf 'branch_tip_is_release_commit=%s\n' "$BRANCH_TIP_IS_RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+          printf 'adopt_prepared=%s\n' "$ADOPT_PREPARED" >> "$GITHUB_OUTPUT"
+          printf 'branch_advanced_unrelated=%s\n' "$BRANCH_ADVANCED_UNRELATED" >> "$GITHUB_OUTPUT"
+          printf 'next=v%s\n' "$NEXT" >> "$GITHUB_OUTPUT"
+          printf 'Calculated next version: v%s\n' "$NEXT"
+
+      - name: Fail on unrelated branch advancement during rerun
+        if: ${{ steps.version.outputs.branch_advanced_unrelated == 'true' }}
+        run: |
+          printf 'Rerun blocked: origin/%s advanced to %s without the expected prepared release state for %s.\n' \
+            "${{ github.ref_name }}" \
+            "${{ steps.version.outputs.branch_tip_sha }}" \
+            "${{ steps.version.outputs.next }}" >&2
+          exit 1
+
+      - name: Adopt prepared release state
+        if: ${{ steps.version.outputs.adopt_prepared == 'true' }}
+        run: git checkout --detach "origin/${{ github.ref_name }}"
+
+      - name: Check whether release tag already exists
+        id: tag_state
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.version.outputs.next }}" >/dev/null; then
+            printf 'missing=false\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'missing=true\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update package.json version
+        run: |
+          VERSION_NUM="${{ steps.version.outputs.next }}"
+          VERSION_NUM="${VERSION_NUM#v}"
+          VERSION_NUM="$VERSION_NUM" bun --eval '
+            const file = Bun.file("package.json");
+            const pkg = await file.json();
+            pkg.version = process.env.VERSION_NUM;
+            await Bun.write("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+          '
+
+      - name: Generate CHANGELOG.md
+        env:
+          VERSION_TAG: ${{ steps.version.outputs.next }}
+        run: |
+          VERSION_NUM="${{ steps.version.outputs.next }}"
+          VERSION_NUM=${VERSION_NUM#v}
+          if grep -Fq "## [$VERSION_NUM]" CHANGELOG.md; then
+            echo "Release heading already present in CHANGELOG.md"
+          else
+            bun run changelog:release
+          fi
+
+      - name: Validate publishable package
+        run: |
+          bun run build
+          bunx --no-install publint
+
+      - name: Commit and push release changes
+        id: release_commit
+        run: |
+          printf 'created=false\n' >> "$GITHUB_OUTPUT"
+          git add package.json CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(release): bump to ${{ steps.version.outputs.next }}"
+            git push
+            printf 'created=true\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build package
+        run: bun run build
+
+      - name: Check whether version is already published
+        id: npm_state
+        run: |
+          VERSION_NUM="${{ steps.version.outputs.next }}"
+          VERSION_NUM=${VERSION_NUM#v}
+          if npm view "strybk@$VERSION_NUM" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+            printf 'published=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'published=false\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish package to npm
+        id: publish
+        if: ${{ steps.npm_state.outputs.published == 'false' }}
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create and push tag
+        if: ${{ steps.tag_state.outputs.missing == 'true' && (steps.npm_state.outputs.published == 'true' || steps.publish.outcome == 'success') }}
+        run: |
+          git tag "${{ steps.version.outputs.next }}"
+          git push origin "${{ steps.version.outputs.next }}"
+
+      - name: Extract release notes
+        run: |
+          VERSION="${{ steps.version.outputs.next }}"
+          VERSION_NUM=${VERSION#v}
+
+          awk -v ver="## [$VERSION_NUM]" '
+            index($0, ver) { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.next }}
+          name: Release ${{ steps.version.outputs.next }}
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false

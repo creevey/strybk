@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page } from "@playwright/test";
 
 export interface StorybookDriver {
   selectStory(page: Page, storyId: string): Promise<void>;

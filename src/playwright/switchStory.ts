@@ -1,6 +1,6 @@
-import type { Page } from '@playwright/test';
+import type { Page } from "@playwright/test";
 
-import { createChannelDriver } from '../storybook/channelDriver.js';
+import { createChannelDriver } from "../storybook/channelDriver.js";
 
 const defaultDriver = createChannelDriver();
 

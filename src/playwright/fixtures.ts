@@ -6,11 +6,11 @@ import type {
   PlaywrightWorkerOptions,
   TestInfo,
   TestType,
-} from '@playwright/test';
+} from "@playwright/test";
 
-import type { StorybookGlobals } from '../config.js';
-import { createChannelDriver } from '../storybook/channelDriver.js';
-import { loadPlaywrightTestRuntime } from './runtime.js';
+import type { StorybookGlobals } from "../config.js";
+import { createChannelDriver } from "../storybook/channelDriver.js";
+import { loadPlaywrightTestRuntime } from "./runtime.js";
 
 type StrybkFixtures = {
   sharedPage: Page;
@@ -26,7 +26,7 @@ type PublicStrybkTest = TestType<
 >;
 
 type StrybkFixtureHandles = {
-  expect: typeof import('@playwright/test').expect;
+  expect: typeof import("@playwright/test").expect;
   test: PublicStrybkTest;
 };
 
@@ -35,29 +35,37 @@ type MetadataWithStorybookGlobals = {
 };
 
 const animationDisablerStyles = [
-  '*, *::before, *::after {',
-  '  animation: none !important;',
-  '  caret-color: transparent !important;',
-  '  cursor: none !important;',
-  '  transition: none !important;',
-  '}',
-  'html {',
-  '  scroll-behavior: auto !important;',
-  '}',
-].join('\n');
+  "*, *::before, *::after {",
+  "  animation: none !important;",
+  "  caret-color: transparent !important;",
+  "  cursor: none !important;",
+  "  transition: none !important;",
+  "}",
+  "html {",
+  "  scroll-behavior: auto !important;",
+  "}",
+].join("\n");
 
 const storybookReadyTimeoutMs = 10_000;
 
 const channelDriver = createChannelDriver();
 
 const isStorybookGlobalValue = (value: unknown): value is StorybookGlobals[string] =>
-  value === null || value === undefined || typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string';
+  value === null ||
+  value === undefined ||
+  typeof value === "boolean" ||
+  typeof value === "number" ||
+  typeof value === "string";
 
 const getStorybookGlobals = (testInfo: TestInfo): StorybookGlobals | undefined => {
   const metadata = testInfo.project.metadata as MetadataWithStorybookGlobals | undefined;
   const storybookGlobals = metadata?.storybookGlobals;
 
-  if (!storybookGlobals || typeof storybookGlobals !== 'object' || Array.isArray(storybookGlobals)) {
+  if (
+    typeof storybookGlobals !== "object" ||
+    storybookGlobals === null ||
+    Array.isArray(storybookGlobals)
+  ) {
     return undefined;
   }
 
@@ -67,7 +75,9 @@ const getStorybookGlobals = (testInfo: TestInfo): StorybookGlobals | undefined =
 };
 
 const resolveIframeUrl = (baseURL: string | undefined): string =>
-  baseURL ? new URL('/iframe.html', baseURL).toString() : '/iframe.html';
+  baseURL !== undefined && baseURL.length > 0
+    ? new URL("/iframe.html", baseURL).toString()
+    : "/iframe.html";
 
 const disableAnimations = async (page: Page): Promise<void> => {
   await page.addStyleTag({ content: animationDisablerStyles });
@@ -82,9 +92,15 @@ const resetSharedPage = async (page: Page): Promise<void> => {
   });
 };
 
-const restoreSharedPageBaseline = async (page: Page, baseURL: string | undefined): Promise<void> => {
+const restoreSharedPageBaseline = async (
+  page: Page,
+  baseURL: string | undefined,
+): Promise<void> => {
   await page.goto(resolveIframeUrl(baseURL));
-  await page.waitForSelector('#storybook-root', { state: 'attached', timeout: storybookReadyTimeoutMs });
+  await page.waitForSelector("#storybook-root", {
+    state: "attached",
+    timeout: storybookReadyTimeoutMs,
+  });
   await disableAnimations(page);
   await resetSharedPage(page);
 };
@@ -93,7 +109,7 @@ export const createStrybkFixtures = (): StrybkFixtureHandles => {
   const { expect, test: base } = loadPlaywrightTestRuntime();
   const test = base.extend<StrybkFixtures, StrybkWorkerFixtures>({
     _workerPage: [
-      async ({ browser }, use, workerInfo) => {
+      async ({ browser }, use, workerInfo): Promise<void> => {
         const context = await browser.newContext({
           baseURL: workerInfo.project.use.baseURL,
           viewport: workerInfo.project.use.viewport,
@@ -104,12 +120,12 @@ export const createStrybkFixtures = (): StrybkFixtureHandles => {
         await use(page);
         await context.close();
       },
-      { scope: 'worker' },
+      { scope: "worker" },
     ],
-    sharedPage: async ({ _workerPage }, use, testInfo) => {
+    sharedPage: async ({ _workerPage }, use, testInfo): Promise<void> => {
       const storybookGlobals = getStorybookGlobals(testInfo);
 
-      if (storybookGlobals) {
+      if (storybookGlobals !== undefined) {
         await channelDriver.updateGlobals(_workerPage, storybookGlobals);
       }
 

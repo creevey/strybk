@@ -2,6 +2,24 @@
 
 Generator-first Playwright screenshot testing for Storybook.
 
+## Development
+
+Install dependencies with Bun:
+
+```sh
+bun install
+```
+
+Common local commands:
+
+```sh
+bun run lint
+bun run typecheck
+bun run test:bun
+bun run build
+bun run check
+```
+
 ## CLI
 
 Generate screenshot specs from a Storybook index:
@@ -18,18 +36,48 @@ strybk generate --config ./strybk.config.ts --dry-run
 
 The config module should export a `StrybkConfig` object, typically as the default export from `defineConfig(...)`.
 
+## Changelog
+
+Preview the next changelog entry:
+
+```sh
+bun run changelog:preview
+```
+
+Regenerate the full changelog from git history:
+
+```sh
+bun run changelog:generate
+```
+
 ## Local Linking
 
 Build the package:
 
 ```sh
-yarn build
+bun run build
 ```
 
-Link it from the consumer project using the path to this package:
+Register this package for local linking:
 
 ```sh
-yarn link /path/to/strybk
+cd /path/to/strybk
+bun link
 ```
 
-Use `yarn unlink /path/to/strybk` in the consumer project when you are done testing locally.
+Link it into the consumer project:
+
+```sh
+cd /path/to/consumer-project
+bun link strybk
+```
+
+If you want to persist the link in the consumer's manifest, Bun supports a `link:` dependency entry:
+
+```json
+{
+  "dependencies": {
+    "strybk": "link:strybk"
+  }
+}
+```

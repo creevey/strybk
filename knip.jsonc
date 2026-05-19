@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "entry": ["src/index.ts", "src/cli.ts"],
+  "project": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.sh"],
+  "ignore": ["dist/**"],
+  "ignoreDependencies": ["@playwright/test", "glob"],
+  "ignoreExportsUsedInFile": true,
+}

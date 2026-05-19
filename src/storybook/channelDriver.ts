@@ -1,6 +1,6 @@
-import type { Page } from '@playwright/test';
+import type { Page } from "@playwright/test";
 
-import type { StorybookDriver } from './driver.js';
+import type { StorybookDriver } from "./driver.js";
 
 interface StorybookChannel {
   on(eventName: string, listener: (payload: unknown) => void): void;
@@ -20,16 +20,16 @@ export function createChannelDriver(): StorybookDriver {
         const channel = (window as StorybookWindow).__STORYBOOK_ADDONS_CHANNEL__;
 
         if (!channel) {
-          throw new Error('Storybook addons channel is unavailable');
+          throw new Error("Storybook addons channel is unavailable");
         }
 
         await new Promise<void>((resolve, reject) => {
           let settled = false;
 
           const cleanup = (): void => {
-            channel.off('storyRendered', handleSuccess);
-            channel.off('storyUnchanged', handleSuccess);
-            channel.off('storyErrored', handleError);
+            channel.off("storyRendered", handleSuccess);
+            channel.off("storyUnchanged", handleSuccess);
+            channel.off("storyErrored", handleError);
           };
 
           const settle = (callback: () => void): void => {
@@ -53,14 +53,17 @@ export function createChannelDriver(): StorybookDriver {
               })
               .catch((error: unknown) => {
                 settle(() => {
-                  reject(error);
+                  reject(error instanceof Error ? error : new Error(String(error)));
                 });
               });
           };
 
           const handleError = (payload: unknown): void => {
             const message =
-              typeof payload === 'object' && payload !== null && 'description' in payload && typeof payload.description === 'string'
+              typeof payload === "object" &&
+              payload !== null &&
+              "description" in payload &&
+              typeof payload.description === "string"
                 ? payload.description
                 : `Storybook failed to render story ${currentStoryId}`;
 
@@ -75,10 +78,10 @@ export function createChannelDriver(): StorybookDriver {
             });
           }, storySwitchTimeoutMs);
 
-          channel.on('storyRendered', handleSuccess);
-          channel.on('storyUnchanged', handleSuccess);
-          channel.on('storyErrored', handleError);
-          channel.emit('setCurrentStory', { storyId: currentStoryId });
+          channel.on("storyRendered", handleSuccess);
+          channel.on("storyUnchanged", handleSuccess);
+          channel.on("storyErrored", handleError);
+          channel.emit("setCurrentStory", { storyId: currentStoryId });
         });
       }, storyId);
     },
@@ -87,10 +90,10 @@ export function createChannelDriver(): StorybookDriver {
         const channel = (window as StorybookWindow).__STORYBOOK_ADDONS_CHANNEL__;
 
         if (!channel) {
-          throw new Error('Storybook addons channel is unavailable');
+          throw new Error("Storybook addons channel is unavailable");
         }
 
-        channel.emit('updateGlobals', { globals: nextGlobals });
+        channel.emit("updateGlobals", { globals: nextGlobals });
       }, globals);
     },
   };

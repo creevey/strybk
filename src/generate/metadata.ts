@@ -2,12 +2,12 @@ export interface StoryPolicy {
   skip?: boolean;
 }
 
-export const FILE_POLICY_KEY = '__file__';
+export const FILE_POLICY_KEY = "__file__";
 
 const skipWhitespace = (source: string, startIndex: number): number => {
   let index = startIndex;
 
-  while (/\s/.test(source[index] ?? '')) {
+  while (/\s/u.test(source[index] ?? "")) {
     index += 1;
   }
 
@@ -17,7 +17,7 @@ const skipWhitespace = (source: string, startIndex: number): number => {
 const extractObjectLiteral = (source: string, startIndex: number): string | null => {
   const objectStartIndex = skipWhitespace(source, startIndex);
 
-  if (source[objectStartIndex] !== '{') {
+  if (source[objectStartIndex] !== "{") {
     return null;
   }
 
@@ -29,12 +29,12 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
   let inBlockComment = false;
 
   for (let index = objectStartIndex; index < source.length; index += 1) {
-    const char = source[index] ?? '';
-    const nextChar = source[index + 1] ?? '';
-    const previousChar = source[index - 1] ?? '';
+    const char = source[index] ?? "";
+    const nextChar = source[index + 1] ?? "";
+    const previousChar = source[index - 1] ?? "";
 
     if (inLineComment) {
-      if (char === '\n') {
+      if (char === "\n") {
         inLineComment = false;
       }
 
@@ -42,7 +42,7 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
     }
 
     if (inBlockComment) {
-      if (previousChar === '*' && char === '/') {
+      if (previousChar === "*" && char === "/") {
         inBlockComment = false;
       }
 
@@ -50,7 +50,7 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
     }
 
     if (inSingleQuote) {
-      if (char === "'" && previousChar !== '\\') {
+      if (char === "'" && previousChar !== "\\") {
         inSingleQuote = false;
       }
 
@@ -58,7 +58,7 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
     }
 
     if (inDoubleQuote) {
-      if (char === '"' && previousChar !== '\\') {
+      if (char === '"' && previousChar !== "\\") {
         inDoubleQuote = false;
       }
 
@@ -66,20 +66,20 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
     }
 
     if (inTemplateString) {
-      if (char === '`' && previousChar !== '\\') {
+      if (char === "`" && previousChar !== "\\") {
         inTemplateString = false;
       }
 
       continue;
     }
 
-    if (char === '/' && nextChar === '/') {
+    if (char === "/" && nextChar === "/") {
       inLineComment = true;
       index += 1;
       continue;
     }
 
-    if (char === '/' && nextChar === '*') {
+    if (char === "/" && nextChar === "*") {
       inBlockComment = true;
       index += 1;
       continue;
@@ -95,17 +95,17 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
       continue;
     }
 
-    if (char === '`') {
+    if (char === "`") {
       inTemplateString = true;
       continue;
     }
 
-    if (char === '{') {
+    if (char === "{") {
       depth += 1;
       continue;
     }
 
-    if (char === '}') {
+    if (char === "}") {
       depth -= 1;
 
       if (depth === 0) {
@@ -117,24 +117,27 @@ const extractObjectLiteral = (source: string, startIndex: number): string | null
   return null;
 };
 
-const extractSkipPolicy = (source: string | null, scope: 'parameters' | 'object'): StoryPolicy | undefined => {
+const extractSkipPolicy = (
+  source: string | null,
+  scope: "parameters" | "object",
+): StoryPolicy | undefined => {
   if (source === null) {
     return undefined;
   }
 
   const pattern =
-    scope === 'parameters'
-      ? /\bcreevey\s*:\s*\{[\s\S]*?\bskip\s*:\s*(true|false)\b/
-      : /\bparameters\s*:\s*\{[\s\S]*?\bcreevey\s*:\s*\{[\s\S]*?\bskip\s*:\s*(true|false)\b/;
+    scope === "parameters"
+      ? /\bcreevey\s*:\s*\{[\s\S]*?\bskip\s*:\s*(true|false)\b/u
+      : /\bparameters\s*:\s*\{[\s\S]*?\bcreevey\s*:\s*\{[\s\S]*?\bskip\s*:\s*(true|false)\b/u;
   const skipMatch = source.match(pattern);
 
-  return skipMatch ? { skip: skipMatch[1] === 'true' } : undefined;
+  return skipMatch ? { skip: skipMatch[1] === "true" } : undefined;
 };
 
 const collectPolicies = (
   source: string,
   pattern: RegExp,
-  scope: 'parameters' | 'object',
+  scope: "parameters" | "object",
 ): ReadonlyArray<readonly [number, string, StoryPolicy]> =>
   Array.from(source.matchAll(pattern)).flatMap((match) => {
     const index = match.index ?? 0;
@@ -145,22 +148,27 @@ const collectPolicies = (
 
 export function extractCreeveyMetadata(source: string): Record<string, StoryPolicy> {
   const storyPolicies = [
-    ...collectPolicies(source, /(\w+)\.parameters\s*=/g, 'parameters'),
-    ...collectPolicies(source, /export\s+const\s+(\w+)(?:\s*:\s*[^=]+)?\s*=/g, 'object'),
+    ...collectPolicies(source, /(\w+)\.parameters\s*=/gu, "parameters"),
+    ...collectPolicies(source, /export\s+const\s+(\w+)(?:\s*:\s*[^=]+)?\s*=/gu, "object"),
   ];
 
   const constPolicies = new Map(
-    collectPolicies(source, /const\s+(\w+)(?:\s*:\s*[^=]+)?\s*=/g, 'object').map(([, name, policy]) => [name, policy] as const),
+    collectPolicies(source, /const\s+(\w+)(?:\s*:\s*[^=]+)?\s*=/gu, "object").map(
+      ([, name, policy]) => [name, policy] as const,
+    ),
   );
 
   const filePolicies = [
-    ...Array.from(source.matchAll(/export\s+default\b/g)).flatMap((match) => {
+    ...Array.from(source.matchAll(/export\s+default\b/gu)).flatMap((match) => {
       const index = match.index ?? 0;
-      const policy = extractSkipPolicy(extractObjectLiteral(source, index + match[0].length), 'object');
+      const policy = extractSkipPolicy(
+        extractObjectLiteral(source, index + match[0].length),
+        "object",
+      );
 
       return policy ? [[index, FILE_POLICY_KEY, policy] as const] : [];
     }),
-    ...Array.from(source.matchAll(/export\s+default\s+(\w+)\s*;/g)).flatMap((match) => {
+    ...Array.from(source.matchAll(/export\s+default\s+(\w+)\s*;/gu)).flatMap((match) => {
       const policy = constPolicies.get(match[1]);
 
       return policy ? [[match.index ?? 0, FILE_POLICY_KEY, policy] as const] : [];

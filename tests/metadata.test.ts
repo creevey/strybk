@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { extractCreeveyMetadata } from '../src/generate/metadata.js';
+import { extractCreeveyMetadata } from "../src/generate/metadata.js";
 
-describe('extractCreeveyMetadata', () => {
-  it('marks stories with creevey skip as excluded', () => {
+describe("extractCreeveyMetadata", () => {
+  it("marks stories with creevey skip as excluded", () => {
     const source = `
       export const Default = {};
       Default.parameters = { creevey: { skip: true } };
@@ -16,7 +16,7 @@ describe('extractCreeveyMetadata', () => {
     expect(metadata.Active?.skip).toBeUndefined();
   });
 
-  it('marks stories with creevey skip when parameters include sibling fields before creevey', () => {
+  it("marks stories with creevey skip when parameters include sibling fields before creevey", () => {
     const source = `
       export const MobileSimple = {};
       MobileSimple.parameters = {
@@ -32,7 +32,7 @@ describe('extractCreeveyMetadata', () => {
     expect(metadata.MobileSimple?.skip).toBe(true);
   });
 
-  it('applies export-default meta creevey skip to every story in the file', () => {
+  it("applies export-default meta creevey skip to every story in the file", () => {
     const source = `
       export default {
         title: 'ToastView',
@@ -48,7 +48,7 @@ describe('extractCreeveyMetadata', () => {
     expect(metadata.__file__?.skip).toBe(true);
   });
 
-  it('applies exported meta constant creevey skip to every story in the file', () => {
+  it("applies exported meta constant creevey skip to every story in the file", () => {
     const source = `
       const meta: Meta = {
         title: 'Center',
@@ -65,7 +65,7 @@ describe('extractCreeveyMetadata', () => {
     expect(metadata.__file__?.skip).toBe(true);
   });
 
-  it('marks CSF story objects with inline creevey skip as excluded', () => {
+  it("marks CSF story objects with inline creevey skip as excluded", () => {
     const source = `
       export const Default = {
         args: {

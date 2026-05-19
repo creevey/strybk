@@ -12,12 +12,12 @@ export interface StrybkConfig {
   };
   generatedRegionName?: string;
   deleteOrphans?: boolean;
-  metadataExtractors?: ('creevey')[];
+  metadataExtractors?: "creevey"[];
 }
 
 export function defineConfig(config: StrybkConfig): StrybkConfig {
   return {
-    generatedRegionName: 'auto-screenshots',
+    generatedRegionName: "auto-screenshots",
     deleteOrphans: true,
     metadataExtractors: [],
     ...config,

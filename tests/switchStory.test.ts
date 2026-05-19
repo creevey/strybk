@@ -1,10 +1,15 @@
-import type { Page } from '@playwright/test';
+import type { Page } from "@playwright/test";
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from "bun:test";
 
-import { switchStory } from '../src/playwright/switchStory.js';
+import { switchStory } from "../src/playwright/switchStory.js";
 
-type ChannelEventName = 'setCurrentStory' | 'storyRendered' | 'storyUnchanged' | 'storyErrored' | 'updateGlobals';
+type ChannelEventName =
+  | "setCurrentStory"
+  | "storyRendered"
+  | "storyUnchanged"
+  | "storyErrored"
+  | "updateGlobals";
 type ChannelListener = (payload: unknown) => void;
 
 interface TestChannel {
@@ -15,8 +20,8 @@ interface TestChannel {
 }
 
 const createTestChannel = (
-  nextEventName: 'storyRendered' | 'storyUnchanged' | 'storyErrored' | null,
-  nextPayload: unknown = undefined,
+  nextEventName: "storyRendered" | "storyUnchanged" | "storyErrored" | null,
+  nextPayload?: unknown,
 ): TestChannel => {
   const listeners = new Map<ChannelEventName, Set<ChannelListener>>();
   const emissions: Array<{ eventName: ChannelEventName; payload: unknown }> = [];
@@ -39,7 +44,7 @@ const createTestChannel = (
       emissions.push({ eventName, payload });
       notify(eventName, payload);
 
-      if (eventName === 'setCurrentStory' && nextEventName) {
+      if (eventName === "setCurrentStory" && nextEventName) {
         notify(nextEventName, nextPayload);
       }
     },
@@ -57,13 +62,13 @@ const createPage = (channel: TestChannel, fontsReady: Promise<void> = Promise.re
   };
 
   return {
-    evaluate: async <Arg, Result>(pageFunction: (arg: Arg) => Result | Promise<Result>, arg: Arg) => {
+    evaluate: <Arg, Result>(pageFunction: (arg: Arg) => Result | Promise<Result>, arg: Arg) => {
       Object.assign(globalThis, {
         document: documentShim,
         window: windowShim,
       });
 
-      return await pageFunction(arg);
+      return pageFunction(arg);
     },
   } as Page;
 };
@@ -72,56 +77,77 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('switchStory', () => {
-  it.each(['storyRendered', 'storyUnchanged'] as const)('resolves when Storybook emits %s', async (eventName) => {
-    const channel = createTestChannel(eventName);
-    const page = createPage(channel);
+describe("switchStory", () => {
+  it.each(["storyRendered", "storyUnchanged"] as const)(
+    "resolves when Storybook emits %s",
+    async (eventName) => {
+      const channel = createTestChannel(eventName);
+      const page = createPage(channel);
 
-    await expect(switchStory(page, 'button--default')).resolves.toBeUndefined();
-    expect(channel.emissions).toContainEqual({
-      eventName: 'setCurrentStory',
-      payload: { storyId: 'button--default' },
-    });
-  });
+      await switchStory(page, "button--default");
+      expect(channel.emissions).toContainEqual({
+        eventName: "setCurrentStory",
+        payload: { storyId: "button--default" },
+      });
+    },
+  );
 
-  it('rejects with a targeted timeout when Storybook does not emit a story event', async () => {
+  it("rejects with a targeted timeout when Storybook does not emit a story event", async () => {
     vi.useFakeTimers();
 
     const channel = createTestChannel(null);
     const page = createPage(channel);
     let rejection: unknown;
 
-    void switchStory(page, 'button--default').catch((error: unknown) => {
+    void switchStory(page, "button--default").catch((error: unknown) => {
       rejection = error;
     });
 
-    await vi.advanceTimersByTimeAsync(10_000);
+    vi.advanceTimersByTime(10_000);
     await Promise.resolve();
 
-    expect(rejection).toEqual(new Error("Failed to select story 'button--default': Story switch timeout"));
+    expect(rejection).toEqual(
+      new Error("Failed to select story 'button--default': Story switch timeout"),
+    );
   });
 
-  it('rejects with the same timeout when font readiness never settles after a story success event', async () => {
+  it("rejects with the same timeout when font readiness never settles after a story success event", async () => {
     vi.useFakeTimers();
 
-    const channel = createTestChannel('storyRendered');
+    const channel = createTestChannel("storyRendered");
     const page = createPage(channel, new Promise<void>(() => {}));
     let rejection: unknown;
 
-    void switchStory(page, 'button--default').catch((error: unknown) => {
+    void switchStory(page, "button--default").catch((error: unknown) => {
       rejection = error;
     });
 
-    await vi.advanceTimersByTimeAsync(10_000);
+    vi.advanceTimersByTime(10_000);
     await Promise.resolve();
 
-    expect(rejection).toEqual(new Error("Failed to select story 'button--default': Story switch timeout"));
+    expect(rejection).toEqual(
+      new Error("Failed to select story 'button--default': Story switch timeout"),
+    );
   });
 
-  it('rejects with the propagated Storybook error text when storyErrored fires', async () => {
-    const channel = createTestChannel('storyErrored', { description: 'Missing required loader data' });
+  it("rejects with the propagated Storybook error text when storyErrored fires", async () => {
+    const channel = createTestChannel("storyErrored", {
+      description: "Missing required loader data",
+    });
     const page = createPage(channel);
 
-    await expect(switchStory(page, 'button--default')).rejects.toThrow('Missing required loader data');
+    let rejection: unknown;
+
+    try {
+      await switchStory(page, "button--default");
+    } catch (error) {
+      rejection = error;
+    }
+
+    expect(rejection).toBeInstanceOf(Error);
+
+    if (rejection instanceof Error) {
+      expect(rejection.message).toContain("Missing required loader data");
+    }
   });
 });
