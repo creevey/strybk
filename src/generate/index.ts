@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import type { StrybkConfig } from '../config.js';
 
 import { discoverStoryFiles } from './discover.js';
-import { extractCreeveyMetadata } from './metadata.js';
+import { extractCreeveyMetadata, FILE_POLICY_KEY } from './metadata.js';
 import { renderScreenshotSpec } from './render.js';
 
 export interface StoryIndexEntry {
@@ -31,7 +31,10 @@ export async function generateScreenshots(args: {
     const storyMetadata = shouldExtractCreeveyMetadata
       ? extractCreeveyMetadata(readFileSync(storyFile.filePath, 'utf8'))
       : {};
-    const filteredStories = stories.filter((story) => !story.exportName || storyMetadata[story.exportName]?.skip !== true);
+    const isFileSkipped = storyMetadata[FILE_POLICY_KEY]?.skip === true;
+    const filteredStories = isFileSkipped
+      ? []
+      : stories.filter((story) => !story.exportName || storyMetadata[story.exportName]?.skip !== true);
     const outputPath = args.config.resolveSpecPath({ storyFilePath: storyFile.filePath });
     const existing = args.readExistingFile?.(outputPath) ?? null;
 

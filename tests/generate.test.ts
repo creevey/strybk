@@ -141,4 +141,76 @@ describe('generateScreenshots', () => {
     expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'button--default')");
     expect(outputs[0]?.content).toContain("test('manual hover'");
   });
+
+  it('keeps an output entry for an existing spec when file-level creevey metadata filters out every story', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'strybk-generate-'));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, 'components', '__stories__', 'Toast.stories.tsx');
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      [
+        'export default {',
+        "  title: 'Toast',",
+        '  parameters: { creevey: { skip: true } },',
+        '};',
+        'export const Default = {};',
+        'export const Warning = {};',
+      ].join('\n'),
+    );
+
+    const outputPath = storyFilePath
+      .replace('/__stories__/', '/__screenshots__/')
+      .replace('.stories.tsx', '.screenshots.spec.ts');
+
+    const config = defineConfig({
+      storybookUrl: 'http://localhost:6060',
+      storyGlobs: [join(tempDir, 'components', '**', '*.stories.tsx')],
+      generatedRegionName: 'custom-generated-region',
+      metadataExtractors: ['creevey'],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace('/__stories__/', '/__screenshots__/').replace('.stories.tsx', '.screenshots.spec.ts'),
+      resolveHarnessImports: () => ({
+        fixturesImport: '../../../__screenshots__/fixtures',
+        switchStoryImport: '../../../__screenshots__/switchStory',
+      }),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      indexEntries: [
+        { id: 'toast--default', title: 'Toast', name: 'Default', exportName: 'Default' },
+        { id: 'toast--warning', title: 'Toast', name: 'Warning', exportName: 'Warning' },
+      ],
+      readExistingFile: (filePath) =>
+        filePath === outputPath
+          ? [
+              "import { test, expect } from '../../../__screenshots__/fixtures';",
+              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              '',
+              '// @generated-begin custom-generated-region',
+              "test.describe('Toast', () => {",
+              "  test('Default', async ({ sharedPage }) => {",
+              "    await switchStory(sharedPage, 'toast--default');",
+              '    await expect(sharedPage).toHaveScreenshot();',
+              '  });',
+              '});',
+              '// @generated-end custom-generated-region',
+              '',
+              "test('manual hover', async ({ sharedPage }) => {",
+              '  await expect(sharedPage).toHaveScreenshot();',
+              '});',
+            ].join('\n')
+          : null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.outputPath).toBe(outputPath);
+    expect(outputs[0]?.content).toContain('// @generated-begin custom-generated-region');
+    expect(outputs[0]?.content).toContain("test.describe('Toast', () => {\n\n});");
+    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'toast--default')");
+    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'toast--warning')");
+    expect(outputs[0]?.content).toContain("test('manual hover'");
+  });
 });
