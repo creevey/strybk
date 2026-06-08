@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           submodules: recursive
@@ -38,12 +38,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: latest
 
       - name: Setup Node.js for npm publish
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version-file: package.json
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
@@ -198,7 +198,7 @@ jobs:
         run: |
           VERSION_NUM="${{ steps.version.outputs.next }}"
           VERSION_NUM=${VERSION_NUM#v}
-          if npm view "strybk@$VERSION_NUM" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+          if npm view "@crvy/strybk@$VERSION_NUM" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
             printf 'published=true\n' >> "$GITHUB_OUTPUT"
           else
             printf 'published=false\n' >> "$GITHUB_OUTPUT"
@@ -208,8 +208,6 @@ jobs:
         id: publish
         if: ${{ steps.npm_state.outputs.published == 'false' }}
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create and push tag
         if: ${{ steps.tag_state.outputs.missing == 'true' && (steps.npm_state.outputs.published == 'true' || steps.publish.outcome == 'success') }}
