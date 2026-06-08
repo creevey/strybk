@@ -1,6 +1,6 @@
 {
   "name": "@crvy/strybk",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Generator-first Playwright screenshot testing for Storybook.",
   "keywords": [
     "crvy",
@@ -19,7 +19,9 @@
     "type": "git",
     "url": "git+https://github.com/creevey/strybk.git"
   },
-  "bin": "./dist/src/cli.js",
+  "bin": {
+    "strybk": "./dist/src/cli.js"
+  },
   "files": [
     "dist/",
     "LICENSE",
