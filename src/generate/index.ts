@@ -69,15 +69,11 @@ export async function generateScreenshots(args: {
       return [];
     }
 
-    const harnessImports = args.config.resolveHarnessImports({ outputPath });
-
     return [
       {
         outputPath,
         content: renderScreenshotSpec({
           config: args.config,
-          fixturesImport: harnessImports.fixturesImport,
-          switchStoryImport: harnessImports.switchStoryImport,
           title: storyFile.title,
           stories: filteredStories,
           manualRegion,

@@ -45,10 +45,6 @@ export default defineConfig({
   storybookUrl: "http://localhost:6006",
   storyGlobs: ["src/**/*.stories.tsx"],
   resolveSpecPath: ({ storyFilePath }) => storyFilePath.replace(/\.stories\.tsx$/, ".spec.ts"),
-  resolveHarnessImports: ({ outputPath }) => ({
-    fixturesImport: "../fixtures",
-    switchStoryImport: "../switch-story",
-  }),
 });
 ```
 

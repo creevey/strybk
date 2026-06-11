@@ -9,8 +9,6 @@ const escapeSingleQuotes = (value: string): string => value.replace(/'/gu, "\\'"
 
 export function renderScreenshotSpec(args: {
   config: StrybkConfig;
-  fixturesImport: string;
-  switchStoryImport: string;
   title: string;
   stories: RenderableStory[];
   manualRegion: string;
@@ -23,5 +21,5 @@ export function renderScreenshotSpec(args: {
     )
     .join("\n\n");
 
-  return `import { test, expect } from '${args.fixturesImport}';\nimport { switchStory } from '${args.switchStoryImport}';\n\n// @generated-begin ${generatedRegionName}\ntest.describe('${escapeSingleQuotes(args.title)}', () => {\n${tests}\n});\n// @generated-end ${generatedRegionName}\n\n${args.manualRegion}`;
+  return `import { test, expect, switchStory } from '@crvy/strybk';\n\n// @generated-begin ${generatedRegionName}\ntest.describe('${escapeSingleQuotes(args.title)}', () => {\n${tests}\n});\n// @generated-end ${generatedRegionName}\n\n${args.manualRegion}`;
 }

@@ -25,16 +25,10 @@ describe("renderScreenshotSpec", () => {
         storyFilePath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     });
 
     const content = renderScreenshotSpec({
       config,
-      fixturesImport: "../../../__screenshots__/fixtures",
-      switchStoryImport: "../../../__screenshots__/switchStory",
       title: "Button",
       stories: [
         { id: "button--default", name: "Default" },
@@ -44,6 +38,7 @@ describe("renderScreenshotSpec", () => {
         "test('hover', async ({ sharedPage }) => { await expect(sharedPage).toHaveScreenshot(); });",
     });
 
+    expect(content).toContain("import { test, expect, switchStory } from '@crvy/strybk'");
     expect(content).toContain("test.describe('Button'");
     expect(content).toContain("await switchStory(sharedPage, 'button--default')");
     expect(content).toContain("// @generated-end auto-screenshots");
@@ -58,16 +53,10 @@ describe("renderScreenshotSpec", () => {
         storyFilePath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     };
 
     const content = renderScreenshotSpec({
       config,
-      fixturesImport: "../../../__screenshots__/fixtures",
-      switchStoryImport: "../../../__screenshots__/switchStory",
       title: "Button",
       stories: [{ id: "button--default", name: "Default" }],
       manualRegion: "",
@@ -110,10 +99,6 @@ describe("generateScreenshots", () => {
         inputPath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     });
 
     const outputs = await generateScreenshots({
@@ -124,8 +109,7 @@ describe("generateScreenshots", () => {
       readExistingFile: (filePath) =>
         filePath === outputPath
           ? [
-              "import { test, expect } from '../../../__screenshots__/fixtures';",
-              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              "import { test, expect, switchStory } from '@crvy/strybk';",
               "",
               "// @generated-begin custom-generated-region",
               "test.describe('Button', () => {",
@@ -182,10 +166,6 @@ describe("generateScreenshots", () => {
         inputPath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     });
 
     const outputs = await generateScreenshots({
@@ -197,8 +177,7 @@ describe("generateScreenshots", () => {
       readExistingFile: (filePath) =>
         filePath === outputPath
           ? [
-              "import { test, expect } from '../../../__screenshots__/fixtures';",
-              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              "import { test, expect, switchStory } from '@crvy/strybk';",
               "",
               "// @generated-begin custom-generated-region",
               "test.describe('Toast', () => {",
@@ -249,10 +228,6 @@ describe("generateScreenshots", () => {
         inputPath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     });
 
     const outputs = await generateScreenshots({
@@ -306,10 +281,6 @@ describe("generateScreenshots", () => {
         inputPath
           .replace("/__stories__/", "/__screenshots__/")
           .replace(".stories.tsx", ".screenshots.spec.ts"),
-      resolveHarnessImports: () => ({
-        fixturesImport: "../../../__screenshots__/fixtures",
-        switchStoryImport: "../../../__screenshots__/switchStory",
-      }),
     });
 
     const outputs = await generateScreenshots({
@@ -318,8 +289,7 @@ describe("generateScreenshots", () => {
       readExistingFile: (filePath) =>
         filePath === outputPath
           ? [
-              "import { test, expect } from '../../../__screenshots__/fixtures';",
-              "import { switchStory } from '../../../__screenshots__/switchStory';",
+              "import { test, expect, switchStory } from '@crvy/strybk';",
               "",
               "// @generated-begin auto-screenshots",
               "test.describe('Center', () => {",

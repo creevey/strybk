@@ -6,10 +6,6 @@ export interface StrybkConfig {
   storybookUrl: string;
   storyGlobs: string[];
   resolveSpecPath: (args: { storyFilePath: string }) => string;
-  resolveHarnessImports: (args: { outputPath: string }) => {
-    fixturesImport: string;
-    switchStoryImport: string;
-  };
   generatedRegionName?: string;
   deleteOrphans?: boolean;
   metadataExtractors?: "creevey"[];

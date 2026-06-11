@@ -58,8 +58,7 @@ const isStrybkConfig = (value: unknown): value is StrybkConfig =>
   isRecord(value) &&
   typeof value.storybookUrl === "string" &&
   Array.isArray(value.storyGlobs) &&
-  typeof value.resolveSpecPath === "function" &&
-  typeof value.resolveHarnessImports === "function";
+  typeof value.resolveSpecPath === "function";
 
 const getIndexEntriesRecord = (payload: unknown): Record<string, unknown> => {
   if (!isRecord(payload)) {
