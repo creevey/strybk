@@ -25,16 +25,32 @@ bun run check
 Generate screenshot specs from a Storybook index:
 
 ```sh
-strybk generate --config ./strybk.config.ts
+crvy-strybk generate --config ./strybk.config.ts
 ```
 
 Use `--dry-run` to compute outputs without writing files:
 
 ```sh
-strybk generate --config ./strybk.config.ts --dry-run
+crvy-strybk generate --config ./strybk.config.ts --dry-run
 ```
 
 The config module should export a `StrybkConfig` object, typically as the default export from `defineConfig(...)`.
+
+Minimal `strybk.config.ts`:
+
+```ts
+import { defineConfig } from "@crvy/strybk";
+
+export default defineConfig({
+  storybookUrl: "http://localhost:6006",
+  storyGlobs: ["src/**/*.stories.tsx"],
+  resolveSpecPath: ({ storyFilePath }) => storyFilePath.replace(/\.stories\.tsx$/, ".spec.ts"),
+  resolveHarnessImports: ({ outputPath }) => ({
+    fixturesImport: "../fixtures",
+    switchStoryImport: "../switch-story",
+  }),
+});
+```
 
 ## Changelog
 
@@ -69,7 +85,7 @@ Link it into the consumer project:
 
 ```sh
 cd /path/to/consumer-project
-bun link strybk
+bun link @crvy/strybk
 ```
 
 If you want to persist the link in the consumer's manifest, Bun supports a `link:` dependency entry:
@@ -77,7 +93,7 @@ If you want to persist the link in the consumer's manifest, Bun supports a `link
 ```json
 {
   "dependencies": {
-    "strybk": "link:strybk"
+    "@crvy/strybk": "link:strybk"
   }
 }
 ```

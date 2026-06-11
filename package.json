@@ -20,7 +20,7 @@
     "url": "git+https://github.com/creevey/strybk.git"
   },
   "bin": {
-    "strybk": "./dist/src/cli.js"
+    "crvy-strybk": "./dist/src/cli.js"
   },
   "files": [
     "dist/",
@@ -89,7 +89,7 @@
   },
   "engines": {
     "bun": ">=1.3.0",
-    "node": ">=24"
+    "node": ">=22"
   },
   "packageManager": "bun@1.3.13"
 }

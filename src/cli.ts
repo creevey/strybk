@@ -119,11 +119,20 @@ const loadConfig = async (configPath: string): Promise<StrybkConfig> => {
 
 const fetchStoryIndex = async (config: StrybkConfig): Promise<StoryIndexEntry[]> => {
   const indexUrl = resolveStorybookIndexUrl(config.storybookUrl);
-  const response = await fetch(indexUrl);
+
+  let response: Response;
+  try {
+    response = await fetch(indexUrl);
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch Storybook index at ${indexUrl.toString()} — is Storybook running?`,
+      { cause: error },
+    );
+  }
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch ${indexUrl.toString()}: ${response.status} ${response.statusText}`.trim(),
+      `Failed to fetch Storybook index at ${indexUrl.toString()}: ${response.status} ${response.statusText}`.trim(),
     );
   }
 
