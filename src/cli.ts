@@ -87,7 +87,8 @@ const toStoryIndexEntry = (value: unknown): StoryIndexEntry | null => {
   if (
     typeof value.id !== "string" ||
     typeof value.title !== "string" ||
-    typeof value.name !== "string"
+    typeof value.name !== "string" ||
+    typeof value.importPath !== "string"
   ) {
     return null;
   }
@@ -96,7 +97,7 @@ const toStoryIndexEntry = (value: unknown): StoryIndexEntry | null => {
     id: value.id,
     title: value.title,
     name: value.name,
-    importPath: typeof value.importPath === "string" ? value.importPath : undefined,
+    importPath: value.importPath,
     exportName: typeof value.exportName === "string" ? value.exportName : undefined,
   };
 };
@@ -212,6 +213,7 @@ export async function runCli(
   const indexEntries = await fetchStoryIndex(config);
   const outputs = await generateScreenshots({
     config,
+    configDir: dirname(resolve(cliArgs.configPath)),
     indexEntries,
     readExistingFile,
   });

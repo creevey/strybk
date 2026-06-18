@@ -68,6 +68,50 @@ describe("renderScreenshotSpec", () => {
 });
 
 describe("generateScreenshots", () => {
+  it("resolves relative storyGlobs against configDir regardless of process.cwd()", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, "components", "__stories__", "Button.stories.tsx");
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      ["export default { title: 'Button' };", "export const Default = {};"].join("\n"),
+    );
+
+    const config = defineConfig({
+      storybookUrl: "http://localhost:6060",
+      storyGlobs: ["components/**/*.stories.tsx"],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath
+          .replace("/__stories__/", "/__screenshots__/")
+          .replace(".stories.tsx", ".screenshots.spec.ts"),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      configDir: tempDir,
+      indexEntries: [
+        {
+          id: "button--default",
+          title: "Button",
+          name: "Default",
+          exportName: "Default",
+          importPath: "./components/__stories__/Button.stories.tsx",
+        },
+      ],
+      readExistingFile: () => null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.outputPath).toBe(
+      storyFilePath
+        .replace("/__stories__/", "/__screenshots__/")
+        .replace(".stories.tsx", ".screenshots.spec.ts"),
+    );
+    expect(outputs[0]?.content).toContain("test.describe('Button'");
+  });
+
   it("keeps an output entry for an existing spec when creevey metadata filters out every story", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
     temporaryDirectories.push(tempDir);
@@ -104,7 +148,13 @@ describe("generateScreenshots", () => {
     const outputs = await generateScreenshots({
       config,
       indexEntries: [
-        { id: "button--default", title: "Button", name: "Default", exportName: "Default" },
+        {
+          id: "button--default",
+          title: "Button",
+          name: "Default",
+          exportName: "Default",
+          importPath: "./components/__stories__/Button.stories.tsx",
+        },
       ],
       readExistingFile: (filePath) =>
         filePath === outputPath
@@ -171,8 +221,20 @@ describe("generateScreenshots", () => {
     const outputs = await generateScreenshots({
       config,
       indexEntries: [
-        { id: "toast--default", title: "Toast", name: "Default", exportName: "Default" },
-        { id: "toast--warning", title: "Toast", name: "Warning", exportName: "Warning" },
+        {
+          id: "toast--default",
+          title: "Toast",
+          name: "Default",
+          exportName: "Default",
+          importPath: "./components/__stories__/Toast.stories.tsx",
+        },
+        {
+          id: "toast--warning",
+          title: "Toast",
+          name: "Warning",
+          exportName: "Warning",
+          importPath: "./components/__stories__/Toast.stories.tsx",
+        },
       ],
       readExistingFile: (filePath) =>
         filePath === outputPath
@@ -237,8 +299,14 @@ describe("generateScreenshots", () => {
           id: "baseline--button-without-content-in-flex",
           title: "Baseline",
           name: "Button without content in flex-container",
+          importPath: "./components/__stories__/Baseline.stories.tsx",
         },
-        { id: "baseline--input-with-button", title: "Baseline", name: "Input with button" },
+        {
+          id: "baseline--input-with-button",
+          title: "Baseline",
+          name: "Input with button",
+          importPath: "./components/__stories__/Baseline.stories.tsx",
+        },
       ],
       readExistingFile: () => null,
     });
@@ -285,7 +353,14 @@ describe("generateScreenshots", () => {
 
     const outputs = await generateScreenshots({
       config,
-      indexEntries: [{ id: "center--simple", title: "Center", name: "simple" }],
+      indexEntries: [
+        {
+          id: "center--simple",
+          title: "Center",
+          name: "simple",
+          importPath: "./components/__stories__/Center.stories.tsx",
+        },
+      ],
       readExistingFile: (filePath) =>
         filePath === outputPath
           ? [
@@ -301,6 +376,75 @@ describe("generateScreenshots", () => {
               "// @generated-end auto-screenshots",
             ].join("\n")
           : null,
+    });
+
+    expect(outputs).toHaveLength(0);
+  });
+
+  it("generates specs for stories that rely on Storybook auto-titles via importPath", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, "src", "components", "Button.stories.tsx");
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      ["export default { component: Button };", "export const Default = {};"].join("\n"),
+    );
+
+    const config = defineConfig({
+      storybookUrl: "http://localhost:6060",
+      storyGlobs: [join(tempDir, "src", "**", "*.stories.tsx")],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace(/\.stories\.tsx$/u, ".spec.ts"),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      configDir: tempDir,
+      indexEntries: [
+        {
+          id: "components-button--default",
+          title: "Components/Button",
+          name: "Default",
+          exportName: "Default",
+          importPath: "./src/components/Button.stories.tsx",
+        },
+      ],
+      readExistingFile: () => null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.outputPath).toBe(storyFilePath.replace(/\.stories\.tsx$/u, ".spec.ts"));
+    expect(outputs[0]?.content).toContain("test.describe('Components/Button'");
+    expect(outputs[0]?.content).toContain(
+      "await switchStory(sharedPage, 'components-button--default')",
+    );
+  });
+
+  it("drops files matched by the glob that have no corresponding index entry", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, "src", "Orphan.stories.tsx");
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      ["export default { component: Orphan };", "export const Default = {};"].join("\n"),
+    );
+
+    const config = defineConfig({
+      storybookUrl: "http://localhost:6060",
+      storyGlobs: [join(tempDir, "src", "**", "*.stories.tsx")],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath.replace(/\.stories\.tsx$/u, ".spec.ts"),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      configDir: tempDir,
+      indexEntries: [],
+      readExistingFile: () => null,
     });
 
     expect(outputs).toHaveLength(0);
