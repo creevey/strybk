@@ -1,23 +1,11 @@
-# strybk
+# @crvy/strybk
 
 Generator-first Playwright screenshot testing for Storybook.
 
-## Development
-
-Install dependencies with Bun:
+## Installation
 
 ```sh
-bun install
-```
-
-Common local commands:
-
-```sh
-bun run lint
-bun run typecheck
-bun run test:bun
-bun run build
-bun run check
+npm install --save-dev @crvy/strybk
 ```
 
 ## CLI
@@ -92,4 +80,22 @@ If you want to persist the link in the consumer's manifest, Bun supports a `link
     "@crvy/strybk": "link:strybk"
   }
 }
+```
+
+## Development
+
+Install dependencies with Bun:
+
+```sh
+bun install
+```
+
+Common local commands:
+
+```sh
+bun run lint
+bun run typecheck
+bun run test:bun
+bun run build
+bun run check
 ```
