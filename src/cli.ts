@@ -151,6 +151,27 @@ const writeGeneratedFiles = (outputs: Array<{ outputPath: string; content: strin
   }
 };
 
+export const HELP_TEXT = `Usage: crvy-strybk generate --config <path> [options]
+
+Generate Playwright screenshot spec files from a running Storybook index.
+
+The Storybook server must be running at the configured \`storybookUrl\` so that
+index.json can be fetched at generate time.
+
+Options:
+  --config <path>     Path to strybk.config.ts (required)
+  --dry-run           Compute outputs without writing files
+  -h, --help          Show this help message
+`;
+
+export function printHelp(): void {
+  console.log(HELP_TEXT);
+}
+
+export function wantsHelp(argv: string[]): boolean {
+  return argv.includes("--help") || argv.includes("-h");
+}
+
 export function parseCliArgs(argv: string[]): GenerateCliArgs {
   const [command, ...options] = argv;
 
@@ -226,6 +247,11 @@ export async function runCli(
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+  if (wantsHelp(argv)) {
+    printHelp();
+    return;
+  }
+
   try {
     const outputs = await runCli(argv);
     const dryRun = argv.includes("--dry-run");

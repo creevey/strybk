@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseCliArgs, runCli } from "../src/cli.js";
+import { HELP_TEXT, parseCliArgs, printHelp, runCli, wantsHelp } from "../src/cli.js";
 
 describe("parseCliArgs", () => {
   it("requires --config for the generate command", () => {
@@ -17,6 +17,35 @@ describe("parseCliArgs", () => {
       configPath: "./strybk.config.ts",
       dryRun: true,
     });
+  });
+});
+
+describe("help", () => {
+  it("documents the generate command and every option", () => {
+    expect(HELP_TEXT).toContain("Usage: crvy-strybk generate");
+    for (const token of ["--config", "--dry-run", "--help"]) {
+      expect(HELP_TEXT).toContain(token);
+    }
+  });
+
+  it("detects --help and -h anywhere in argv", () => {
+    expect(wantsHelp(["--help"])).toBe(true);
+    expect(wantsHelp(["-h"])).toBe(true);
+    expect(wantsHelp(["generate", "--config", "x", "--help"])).toBe(true);
+  });
+
+  it("does not request help when no help flag is present", () => {
+    expect(wantsHelp(["generate", "--config", "./strybk.config.ts"])).toBe(false);
+  });
+
+  it("prints the help text to stdout", () => {
+    const spy = vi.spyOn(console, "log");
+
+    printHelp();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]?.[0]).toBe(HELP_TEXT);
+    spy.mockRestore();
   });
 });
 
