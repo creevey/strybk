@@ -2,6 +2,8 @@ import type { Page, TestInfo } from "@playwright/test";
 
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 
+import type { CreeveyApi, StoriesRaw } from "../src/storybook/creeveyParams.js";
+
 type FixtureDefinitions = {
   _workerPage: [
     (
@@ -17,9 +19,18 @@ type FixtureDefinitions = {
     ) => Promise<void>,
     { scope: "worker" },
   ];
+  _stories: [
+    (args: { _workerPage: Page }, use: (stories: StoriesRaw) => Promise<void>) => Promise<void>,
+    { scope: "worker" },
+  ];
   sharedPage: (
     args: { _workerPage: Page },
     use: (page: Page) => Promise<void>,
+    testInfo: TestInfo,
+  ) => Promise<void>;
+  creevey: (
+    args: { _stories: StoriesRaw },
+    use: (api: CreeveyApi) => Promise<void>,
     testInfo: TestInfo,
   ) => Promise<void>;
 };
@@ -29,6 +40,7 @@ const expectHandle = expect as unknown as typeof import("@playwright/test").expe
 let updateGlobalsMock = mock(
   (_page: Page, _globals: Record<string, unknown>): Promise<void> => Promise.resolve(),
 );
+let extractStoriesMock = mock((_page: Page): Promise<StoriesRaw> => Promise.resolve({}));
 
 beforeEach(() => {
   extendMock = mock((_fixtureDefinitions: FixtureDefinitions): string => "extended-test");
@@ -62,6 +74,15 @@ beforeEach(() => {
           extend: extendMock,
         },
       }),
+    }),
+  );
+
+  extractStoriesMock = mock((_page: Page): Promise<StoriesRaw> => Promise.resolve({}));
+
+  void mock.module(
+    "../src/storybook/extract.js",
+    (): { extractStories: typeof extractStoriesMock } => ({
+      extractStories: extractStoriesMock,
     }),
   );
 });
@@ -170,5 +191,77 @@ describe("createStrybkFixtures", () => {
       timeout: 10_000,
     });
     expect(goto.mock.invocationCallOrder[0]).toBeGreaterThan(use.mock.invocationCallOrder[0]);
+  });
+
+  it("extracts stories once per worker via the _stories fixture", async () => {
+    const stubStories: StoriesRaw = {
+      "button--default": { title: "Button", name: "Default" },
+    };
+
+    extractStoriesMock = mock((_page: Page): Promise<StoriesRaw> => Promise.resolve(stubStories));
+
+    void mock.module(
+      "../src/storybook/extract.js",
+      (): { extractStories: typeof extractStoriesMock } => ({
+        extractStories: extractStoriesMock,
+      }),
+    );
+
+    const { createStrybkFixtures } = await import("../src/playwright/fixtures.js");
+
+    createStrybkFixtures();
+
+    const fixtureDefinitions = extendMock.mock.calls[0]?.[0];
+
+    if (fixtureDefinitions === undefined) {
+      throw new Error("Expected fixture definitions to be passed to test.extend");
+    }
+
+    const workerPage = {} as unknown as Page;
+    const use = mock((_stories: StoriesRaw): Promise<void> => Promise.resolve());
+
+    await fixtureDefinitions._stories[0]({ _workerPage: workerPage }, use);
+
+    expect(extractStoriesMock).toHaveBeenCalledWith(workerPage);
+    expect(extractStoriesMock).toHaveBeenCalledTimes(1);
+    expect(use).toHaveBeenCalledWith(stubStories);
+  });
+
+  it("creevey fixture resolves params using the Playwright project name as the browser dimension", async () => {
+    const stubStories: StoriesRaw = {
+      "button--default": {
+        title: "Button",
+        name: "Default",
+        parameters: { creevey: { skip: { "no ie": { in: "ie11" } } } },
+      },
+    };
+
+    const { createStrybkFixtures } = await import("../src/playwright/fixtures.js");
+
+    createStrybkFixtures();
+
+    const fixtureDefinitions = extendMock.mock.calls[0]?.[0];
+
+    if (fixtureDefinitions === undefined) {
+      throw new Error("Expected fixture definitions to be passed to test.extend");
+    }
+
+    let capturedApi: CreeveyApi | undefined;
+    const use = mock((api: CreeveyApi): Promise<void> => {
+      capturedApi = api;
+
+      return Promise.resolve();
+    });
+
+    await fixtureDefinitions.creevey({ _stories: stubStories }, use, {
+      project: { name: "ie11" },
+    } as unknown as TestInfo);
+
+    expect(capturedApi?.params("button--default")).toEqual({
+      skip: true,
+      reason: "no ie",
+      captureElement: null,
+      ignoreElements: [],
+    });
   });
 });
