@@ -35,7 +35,12 @@
     "no-underscore-dangle": [
       "error",
       {
-        "allow": ["__file__", "__STORYBOOK_ADDONS_CHANNEL__", "_workerPage"]
+        "allow": [
+          "__file__",
+          "__STORYBOOK_ADDONS_CHANNEL__",
+          "__STORYBOOK_PREVIEW__",
+          "_workerPage"
+        ]
       }
     ]
   },
