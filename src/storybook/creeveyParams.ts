@@ -73,3 +73,72 @@ export const shouldSkip = (
 
   return false;
 };
+
+export interface CreeveyStoryParams {
+  captureElement?: string | null;
+  ignoreElements?: string | string[] | null;
+  skip?: SkipOptions;
+}
+
+export interface NormalizedCreeveyParams {
+  skip: boolean;
+  reason?: string;
+  captureElement: string | null;
+  ignoreElements: string[];
+}
+
+export interface StoriesRaw {
+  [storyId: string]: {
+    title: string;
+    name: string;
+    parameters?: { creevey?: CreeveyStoryParams };
+  };
+}
+
+export interface CreeveyApi {
+  params(storyId: string): NormalizedCreeveyParams;
+}
+
+const toArray = (value: string | string[] | null | undefined): string[] => {
+  if (value === null || value === undefined) {
+    return [];
+  }
+
+  return Array.isArray(value) ? value : [value];
+};
+
+export const normalizeCreeveyParams = (
+  raw: CreeveyStoryParams | undefined,
+  browser: string,
+  meta: { title: string; name: string },
+): NormalizedCreeveyParams => {
+  if (raw === undefined) {
+    return { skip: false, captureElement: null, ignoreElements: [] };
+  }
+
+  const skipResult = raw.skip === undefined ? false : shouldSkip(browser, meta, raw.skip);
+
+  return {
+    skip: skipResult !== false,
+    reason: typeof skipResult === "string" ? skipResult : undefined,
+    captureElement: raw.captureElement === undefined ? null : raw.captureElement,
+    ignoreElements: toArray(raw.ignoreElements),
+  };
+};
+
+export const resolveCreeveyStory = (
+  stories: StoriesRaw,
+  storyId: string,
+  browser: string,
+): NormalizedCreeveyParams => {
+  const story = stories[storyId];
+
+  if (story === undefined) {
+    throw new Error(`Story '${storyId}' not found in extracted Storybook stories`);
+  }
+
+  return normalizeCreeveyParams(story.parameters?.creevey, browser, {
+    title: story.title,
+    name: story.name,
+  });
+};

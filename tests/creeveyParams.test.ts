@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   deserializeRegExp,
   isSerializedRegExp,
+  normalizeCreeveyParams,
+  resolveCreeveyStory,
   shouldSkip,
+  type CreeveyStoryParams,
   type SerializedRegExp,
+  type StoriesRaw,
 } from "../src/storybook/creeveyParams.js";
 
 describe("serialized regexp", () => {
@@ -66,5 +70,84 @@ describe("shouldSkip", () => {
     expect(shouldSkip("chrome", meta, skipOptions)).toBe(false);
     expect(shouldSkip("ie11", meta, skipOptions)).toBe("r");
     expect(shouldSkip("chrome", { title: "X", name: "Other" }, skipOptions)).toBe("r");
+  });
+});
+
+describe("normalizeCreeveyParams", () => {
+  const browser = "chrome";
+  const meta = { title: "Button", name: "Default" };
+
+  it("returns a viewport/empty default when creevey params are absent", () => {
+    expect(normalizeCreeveyParams(undefined, browser, meta)).toEqual({
+      skip: false,
+      captureElement: null,
+      ignoreElements: [],
+    });
+  });
+
+  it("normalizes captureElement (string stays, null stays, absent -> null)", () => {
+    expect(normalizeCreeveyParams({ captureElement: "#root" }, browser, meta).captureElement).toBe(
+      "#root",
+    );
+    expect(normalizeCreeveyParams({ captureElement: null }, browser, meta).captureElement).toBe(
+      null,
+    );
+    expect(normalizeCreeveyParams({}, browser, meta).captureElement).toBe(null);
+  });
+
+  it("normalizes ignoreElements into an array", () => {
+    expect(normalizeCreeveyParams({ ignoreElements: ".x" }, browser, meta).ignoreElements).toEqual([
+      ".x",
+    ]);
+    expect(
+      normalizeCreeveyParams({ ignoreElements: [".a", ".b"] }, browser, meta).ignoreElements,
+    ).toEqual([".a", ".b"]);
+    expect(normalizeCreeveyParams({ ignoreElements: null }, browser, meta).ignoreElements).toEqual(
+      [],
+    );
+  });
+
+  it("resolves skip against browser/kind/name and carries the reason", () => {
+    const params: CreeveyStoryParams = { skip: { "no ie": { in: "ie11" } } };
+
+    expect(normalizeCreeveyParams(params, "chrome", meta)).toMatchObject({
+      skip: false,
+      reason: undefined,
+    });
+    expect(normalizeCreeveyParams(params, "ie11", meta)).toMatchObject({
+      skip: true,
+      reason: "no ie",
+    });
+  });
+
+  it("handles serialized regexps inside skip options (runtime extract form)", () => {
+    const params: CreeveyStoryParams = {
+      skip: { ff: { in: { __regexp: true, source: "fire", flags: "" } } },
+    };
+
+    expect(normalizeCreeveyParams(params, "firefox", meta)).toMatchObject({
+      skip: true,
+      reason: "ff",
+    });
+  });
+});
+
+describe("resolveCreeveyStory", () => {
+  const stories: StoriesRaw = {
+    "button--default": {
+      title: "Button",
+      name: "Default",
+      parameters: { creevey: { captureElement: "#root" } },
+    },
+  };
+
+  it("resolves merged params for the story id", () => {
+    expect(resolveCreeveyStory(stories, "button--default", "chrome")).toMatchObject({
+      captureElement: "#root",
+    });
+  });
+
+  it("throws when the story id is missing", () => {
+    expect(() => resolveCreeveyStory(stories, "nope--missing", "chrome")).toThrow(/nope--missing/u);
   });
 });
