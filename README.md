@@ -36,6 +36,31 @@ export default defineConfig({
 });
 ```
 
+## Generated tests
+
+Each generated spec renders a Playwright test per story. At runtime, `parameters.creevey` (read from the running Storybook, merged across global / kind / story levels) drives capture and skip behavior — no Storybook addon required:
+
+- `captureElement: '<selector>'` — captures `page.locator('<selector>')`.
+- `captureElement: null` (or unset) — captures the viewport.
+- `skip: { '<reason>': { in, kinds, stories } }` — marks the test skipped with `<reason>`; `in` matches the Playwright project name.
+- `ignoreElements: '<selector>' | ['<selector>']` — masks those elements via `toHaveScreenshot({ mask })`.
+
+Example:
+
+```ts
+// stories/MyModal.stories.tsx
+export default {
+  title: "MyModal",
+  parameters: { creevey: { captureElement: "#storybook-root" } },
+};
+
+export const Default = {
+  parameters: { creevey: { ignoreElements: ".timestamp" } },
+};
+```
+
+**Prerequisites for running specs:** `@playwright/test` (peer dependency) and browser binaries (`npx playwright install`). The `crvy-strybk generate` command itself needs neither — only a running Storybook to fetch `index.json`.
+
 ## Changelog
 
 Preview the next changelog entry:
