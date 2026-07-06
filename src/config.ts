@@ -8,14 +8,12 @@ export interface StrybkConfig {
   resolveSpecPath: (args: { storyFilePath: string }) => string;
   generatedRegionName?: string;
   deleteOrphans?: boolean;
-  metadataExtractors?: "creevey"[];
 }
 
 export function defineConfig(config: StrybkConfig): StrybkConfig {
   return {
     generatedRegionName: "auto-screenshots",
     deleteOrphans: true,
-    metadataExtractors: [],
     ...config,
   };
 }

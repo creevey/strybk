@@ -121,7 +121,7 @@ describe("generateScreenshots", () => {
     expect(outputs[0]?.content).toContain("test.describe('Button'");
   });
 
-  it("keeps an output entry for an existing spec when creevey metadata filters out every story", async () => {
+  it("emits a test for every story regardless of creevey skip in source", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
     temporaryDirectories.push(tempDir);
 
@@ -132,22 +132,13 @@ describe("generateScreenshots", () => {
       [
         "export default { title: 'Button' };",
         "export const Default = {};",
-        "Default.parameters = {",
-        '  viewport: { defaultViewport: "iphone" },',
-        "  creevey: { skip: true },",
-        "};",
+        "Default.parameters = { creevey: { skip: true } };",
       ].join("\n"),
     );
-
-    const outputPath = storyFilePath
-      .replace("/__stories__/", "/__screenshots__/")
-      .replace(".stories.tsx", ".screenshots.spec.ts");
 
     const config = defineConfig({
       storybookUrl: "http://localhost:6060",
       storyGlobs: [join(tempDir, "components", "**", "*.stories.tsx")],
-      generatedRegionName: "custom-generated-region",
-      metadataExtractors: ["creevey"],
       resolveSpecPath: ({ storyFilePath: inputPath }) =>
         inputPath
           .replace("/__stories__/", "/__screenshots__/")
@@ -165,229 +156,11 @@ describe("generateScreenshots", () => {
           importPath: "./components/__stories__/Button.stories.tsx",
         },
       ],
-      readExistingFile: (filePath) =>
-        filePath === outputPath
-          ? [
-              "import { test, expect, switchStory } from '@crvy/strybk';",
-              "",
-              "// @generated-begin custom-generated-region",
-              "test.describe('Button', () => {",
-              "  test('Default', async ({ sharedPage }) => {",
-              "    await switchStory(sharedPage, 'button--default');",
-              "    await expect(sharedPage).toHaveScreenshot();",
-              "  });",
-              "});",
-              "// @generated-end custom-generated-region",
-              "",
-              "test('manual hover', async ({ sharedPage }) => {",
-              "  await expect(sharedPage).toHaveScreenshot();",
-              "});",
-            ].join("\n")
-          : null,
-    });
-
-    expect(outputs).toHaveLength(1);
-    expect(outputs[0]?.outputPath).toBe(outputPath);
-    expect(outputs[0]?.content).toContain("// @generated-begin custom-generated-region");
-    expect(outputs[0]?.content).toContain("test.describe('Button', () => {\n\n});");
-    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'button--default')");
-    expect(outputs[0]?.content).toContain("test('manual hover'");
-  });
-
-  it("keeps an output entry for an existing spec when file-level creevey metadata filters out every story", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
-    temporaryDirectories.push(tempDir);
-
-    const storyFilePath = join(tempDir, "components", "__stories__", "Toast.stories.tsx");
-    mkdirSync(dirname(storyFilePath), { recursive: true });
-    writeFileSync(
-      storyFilePath,
-      [
-        "export default {",
-        "  title: 'Toast',",
-        "  parameters: { creevey: { skip: true } },",
-        "};",
-        "export const Default = {};",
-        "export const Warning = {};",
-      ].join("\n"),
-    );
-
-    const outputPath = storyFilePath
-      .replace("/__stories__/", "/__screenshots__/")
-      .replace(".stories.tsx", ".screenshots.spec.ts");
-
-    const config = defineConfig({
-      storybookUrl: "http://localhost:6060",
-      storyGlobs: [join(tempDir, "components", "**", "*.stories.tsx")],
-      generatedRegionName: "custom-generated-region",
-      metadataExtractors: ["creevey"],
-      resolveSpecPath: ({ storyFilePath: inputPath }) =>
-        inputPath
-          .replace("/__stories__/", "/__screenshots__/")
-          .replace(".stories.tsx", ".screenshots.spec.ts"),
-    });
-
-    const outputs = await generateScreenshots({
-      config,
-      indexEntries: [
-        {
-          id: "toast--default",
-          title: "Toast",
-          name: "Default",
-          exportName: "Default",
-          importPath: "./components/__stories__/Toast.stories.tsx",
-        },
-        {
-          id: "toast--warning",
-          title: "Toast",
-          name: "Warning",
-          exportName: "Warning",
-          importPath: "./components/__stories__/Toast.stories.tsx",
-        },
-      ],
-      readExistingFile: (filePath) =>
-        filePath === outputPath
-          ? [
-              "import { test, expect, switchStory } from '@crvy/strybk';",
-              "",
-              "// @generated-begin custom-generated-region",
-              "test.describe('Toast', () => {",
-              "  test('Default', async ({ sharedPage }) => {",
-              "    await switchStory(sharedPage, 'toast--default');",
-              "    await expect(sharedPage).toHaveScreenshot();",
-              "  });",
-              "});",
-              "// @generated-end custom-generated-region",
-              "",
-              "test('manual hover', async ({ sharedPage }) => {",
-              "  await expect(sharedPage).toHaveScreenshot();",
-              "});",
-            ].join("\n")
-          : null,
-    });
-
-    expect(outputs).toHaveLength(1);
-    expect(outputs[0]?.outputPath).toBe(outputPath);
-    expect(outputs[0]?.content).toContain("// @generated-begin custom-generated-region");
-    expect(outputs[0]?.content).toContain("test.describe('Toast', () => {\n\n});");
-    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'toast--default')");
-    expect(outputs[0]?.content).not.toContain("await switchStory(sharedPage, 'toast--warning')");
-    expect(outputs[0]?.content).toContain("test('manual hover'");
-  });
-
-  it("filters per-story creevey skips by story id when Storybook index entries omit exportName", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
-    temporaryDirectories.push(tempDir);
-
-    const storyFilePath = join(tempDir, "components", "__stories__", "Baseline.stories.tsx");
-    mkdirSync(dirname(storyFilePath), { recursive: true });
-    writeFileSync(
-      storyFilePath,
-      [
-        "export default { title: 'Baseline' };",
-        "export const ButtonWithoutContentInFlex = {};",
-        "ButtonWithoutContentInFlex.parameters = { creevey: { skip: true } };",
-        "export const InputWithButton = {};",
-      ].join("\n"),
-    );
-
-    const config = defineConfig({
-      storybookUrl: "http://localhost:6060",
-      storyGlobs: [join(tempDir, "components", "**", "*.stories.tsx")],
-      metadataExtractors: ["creevey"],
-      resolveSpecPath: ({ storyFilePath: inputPath }) =>
-        inputPath
-          .replace("/__stories__/", "/__screenshots__/")
-          .replace(".stories.tsx", ".screenshots.spec.ts"),
-    });
-
-    const outputs = await generateScreenshots({
-      config,
-      indexEntries: [
-        {
-          id: "baseline--button-without-content-in-flex",
-          title: "Baseline",
-          name: "Button without content in flex-container",
-          importPath: "./components/__stories__/Baseline.stories.tsx",
-        },
-        {
-          id: "baseline--input-with-button",
-          title: "Baseline",
-          name: "Input with button",
-          importPath: "./components/__stories__/Baseline.stories.tsx",
-        },
-      ],
       readExistingFile: () => null,
     });
 
     expect(outputs).toHaveLength(1);
-    expect(outputs[0]?.content).not.toContain(
-      "await switchStory(sharedPage, 'baseline--button-without-content-in-flex')",
-    );
-    expect(outputs[0]?.content).toContain(
-      "await switchStory(sharedPage, 'baseline--input-with-button')",
-    );
-  });
-
-  it("omits a fully skipped existing spec when no manual region remains", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
-    temporaryDirectories.push(tempDir);
-
-    const storyFilePath = join(tempDir, "components", "__stories__", "Center.stories.tsx");
-    mkdirSync(dirname(storyFilePath), { recursive: true });
-    writeFileSync(
-      storyFilePath,
-      [
-        "export default {",
-        "  title: 'Center',",
-        "  parameters: { creevey: { skip: true } },",
-        "};",
-        "export const Simple = {};",
-      ].join("\n"),
-    );
-
-    const outputPath = storyFilePath
-      .replace("/__stories__/", "/__screenshots__/")
-      .replace(".stories.tsx", ".screenshots.spec.ts");
-
-    const config = defineConfig({
-      storybookUrl: "http://localhost:6060",
-      storyGlobs: [join(tempDir, "components", "**", "*.stories.tsx")],
-      metadataExtractors: ["creevey"],
-      resolveSpecPath: ({ storyFilePath: inputPath }) =>
-        inputPath
-          .replace("/__stories__/", "/__screenshots__/")
-          .replace(".stories.tsx", ".screenshots.spec.ts"),
-    });
-
-    const outputs = await generateScreenshots({
-      config,
-      indexEntries: [
-        {
-          id: "center--simple",
-          title: "Center",
-          name: "simple",
-          importPath: "./components/__stories__/Center.stories.tsx",
-        },
-      ],
-      readExistingFile: (filePath) =>
-        filePath === outputPath
-          ? [
-              "import { test, expect, switchStory } from '@crvy/strybk';",
-              "",
-              "// @generated-begin auto-screenshots",
-              "test.describe('Center', () => {",
-              "  test('simple', async ({ sharedPage }) => {",
-              "    await switchStory(sharedPage, 'center--simple');",
-              "    await expect(sharedPage).toHaveScreenshot();",
-              "  });",
-              "});",
-              "// @generated-end auto-screenshots",
-            ].join("\n")
-          : null,
-    });
-
-    expect(outputs).toHaveLength(0);
+    expect(outputs[0]?.content).toContain("await switchStory(sharedPage, 'button--default')");
   });
 
   it("generates specs for stories that rely on Storybook auto-titles via importPath", async () => {
