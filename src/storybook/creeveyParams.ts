@@ -28,7 +28,7 @@ const matchBy = (
   (isSerializedRegExp(pattern) && deserializeRegExp(pattern).test(value)) ||
   pattern === undefined;
 
-export const shouldSkipByOption = (
+const shouldSkipByOption = (
   browser: string,
   meta: { title: string; name: string },
   skipOption: SkipOption | SkipOption[],
