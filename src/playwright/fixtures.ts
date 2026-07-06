@@ -9,15 +9,24 @@ import type {
 } from "@playwright/test";
 
 import type { StorybookGlobals } from "../config.js";
+import type {
+  CreeveyApi,
+  NormalizedCreeveyParams,
+  StoriesRaw,
+} from "../storybook/creeveyParams.js";
+import { resolveCreeveyStory } from "../storybook/creeveyParams.js";
 import { createChannelDriver } from "../storybook/channelDriver.js";
+import { extractStories } from "../storybook/extract.js";
 import { loadPlaywrightTestRuntime } from "./runtime.js";
 
 type StrybkFixtures = {
   sharedPage: Page;
+  creevey: CreeveyApi;
 };
 
 type StrybkWorkerFixtures = {
   _workerPage: Page;
+  _stories: StoriesRaw;
 };
 
 type PublicStrybkTest = TestType<
@@ -122,6 +131,13 @@ export const createStrybkFixtures = (): StrybkFixtureHandles => {
       },
       { scope: "worker" },
     ],
+    _stories: [
+      async ({ _workerPage }, use): Promise<void> => {
+        const stories = await extractStories(_workerPage);
+        await use(stories);
+      },
+      { scope: "worker" },
+    ],
     sharedPage: async ({ _workerPage }, use, testInfo): Promise<void> => {
       const storybookGlobals = getStorybookGlobals(testInfo);
 
@@ -132,6 +148,15 @@ export const createStrybkFixtures = (): StrybkFixtureHandles => {
       await resetSharedPage(_workerPage);
       await use(_workerPage);
       await restoreSharedPageBaseline(_workerPage, testInfo.project.use.baseURL);
+    },
+    creevey: async ({ _stories }, use, testInfo): Promise<void> => {
+      const browser = testInfo.project.name;
+      const api: CreeveyApi = {
+        params: (storyId: string): NormalizedCreeveyParams =>
+          resolveCreeveyStory(_stories, storyId, browser),
+      };
+
+      await use(api);
     },
   });
 

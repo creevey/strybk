@@ -39,7 +39,8 @@
           "__file__",
           "__STORYBOOK_ADDONS_CHANNEL__",
           "__STORYBOOK_PREVIEW__",
-          "_workerPage"
+          "_workerPage",
+          "_stories"
         ]
       }
     ]
