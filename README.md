@@ -42,7 +42,7 @@ Each generated spec renders a Playwright test per story. At runtime, `parameters
 
 - `captureElement: '<selector>'` — captures `page.locator('<selector>')`.
 - `captureElement: null` (or unset) — captures the viewport.
-- `skip: { '<reason>': { in, kinds, stories } }` — marks the test skipped with `<reason>`; `in` matches the Playwright project name.
+- `skip: { '<reason>': { in, kinds, stories } }` — marks the test skipped with `<reason>`. Note: `in` matches the **Playwright project name** (not the browser engine), so with the default project name `chromium`, a rule like `{ in: 'chrome' }` won't match — name your Playwright projects to line up with your `in:` rules, or scope rules via `kinds`/`stories`.
 - `ignoreElements: '<selector>' | ['<selector>']` — masks those elements via `toHaveScreenshot({ mask })`.
 
 Example:
@@ -60,6 +60,10 @@ export const Default = {
 ```
 
 **Prerequisites for running specs:** `@playwright/test` (peer dependency) and browser binaries (`npx playwright install`). The `crvy-strybk generate` command itself needs neither — only a running Storybook to fetch `index.json`.
+
+## Upgrading from 0.0.x
+
+`metadataExtractors` has been removed. `skip` and `captureElement` now resolve automatically at runtime — remove any `metadataExtractors: ["creevey"]` line from your `strybk.config.ts` and re-run `crvy-strybk generate`. Skipped stories now appear as `skipped` in Playwright reports rather than being omitted from the spec file.
 
 ## Changelog
 
