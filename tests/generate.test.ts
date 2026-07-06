@@ -40,7 +40,16 @@ describe("renderScreenshotSpec", () => {
 
     expect(content).toContain("import { test, expect, switchStory } from '@crvy/strybk'");
     expect(content).toContain("test.describe('Button'");
+    expect(content).toContain("async ({ sharedPage, creevey })");
+    expect(content).toContain("creevey.params('button--default')");
+    expect(content).toContain("test.skip(skip, reason)");
     expect(content).toContain("await switchStory(sharedPage, 'button--default')");
+    expect(content).toContain(
+      "const target = captureElement ? sharedPage.locator(captureElement) : sharedPage",
+    );
+    expect(content).toContain(
+      "mask: ignoreElements.map((selector) => sharedPage.locator(selector))",
+    );
     expect(content).toContain("// @generated-end auto-screenshots");
     expect(content).toContain("test('hover'");
   });
