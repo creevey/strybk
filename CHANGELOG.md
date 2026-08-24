@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2026-08-24
+
+### Added
+
+- Add creevey regex deserialization helpers
+- Add creevey skip-option matching
+- Resolve creevey story params from extracted stories
+- Extract merged storybook params at runtime
+- Render captureElement/skip-aware generated tests
+- Add creevey fixture and worker story cache
+
+### Changed
+
+- Drop generate-time creevey source-parsing
+- Unexport shouldSkipByOption helper
+
+### Documentation
+
+- Add captureElement + runtime creevey resolution design spec
+- Add captureElement runtime-resolution implementation plan
+- Document creevey capture/skip/ignoreElements and Playwright prerequisite
+- Add migration note and clarify skip in-dimension matching
+
+### Testing
+
+- Cover _stories and creevey fixture wiring
 ## [0.0.5] - 2026-07-06
 
 ### Added
