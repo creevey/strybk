@@ -160,6 +160,25 @@ describe("renderScreenshotSpec", () => {
     expect(content).toContain("    test('Default', async ({ sharedPage, creevey }) => {");
     expect(content).not.toContain("describe('',");
   });
+
+  it("escapes backslashes and single quotes in titles and story names", () => {
+    const config = defineConfig({
+      storybookUrl: "http://localhost:6060",
+      storyGlobs: ["components/**/__stories__/*.stories.tsx"],
+      resolveSpecPath: ({ storyFilePath }) => storyFilePath.replace(".stories.tsx", ".spec.ts"),
+    });
+
+    const content = renderScreenshotSpec({
+      config,
+      title: "Foo\\ Bar's/Widget\\",
+      stories: [{ id: "foo-bar-s-widget--it-s-alive\\", name: "It's alive\\" }],
+      manualRegion: "",
+    });
+
+    expect(content).toContain("test.describe('Foo\\\\ Bar\\'s', () => {");
+    expect(content).toContain("  test.describe('Widget\\\\', () => {");
+    expect(content).toContain("    test('It\\'s alive\\\\', async ({ sharedPage, creevey }) => {");
+  });
 });
 
 describe("generateScreenshots", () => {

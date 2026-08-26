@@ -5,7 +5,8 @@ export interface RenderableStory {
   name: string;
 }
 
-const escapeSingleQuotes = (value: string): string => value.replace(/'/gu, "\\'");
+const escapeSingleQuotes = (value: string): string =>
+  value.replace(/\\/gu, "\\\\").replace(/'/gu, "\\'");
 
 const splitTitleSegments = (title: string): string[] =>
   title
