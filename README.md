@@ -40,6 +40,8 @@ export default defineConfig({
 
 Each generated spec renders a Playwright test per story. At runtime, `parameters.creevey` (read from the running Storybook, merged across global / kind / story levels) drives capture and skip behavior — no Storybook addon required:
 
+Generated suites nest one `test.describe` per title segment — `Components/Button` becomes `describe('Components') > describe('Button')` — so the Playwright HTML reporter shows a collapsible tree. Snapshot filenames are unaffected. Note that `--grep` patterns containing `/` no longer match (Playwright greps the space-joined title path); grep by a single segment instead, e.g. `--grep CommentLine`.
+
 - `captureElement: '<selector>'` — captures `page.locator('<selector>')`.
 - `captureElement: null` (or unset) — captures the viewport.
 - `skip: { '<reason>': { in, kinds, stories } }` — marks the test skipped with `<reason>`. Note: `in` matches the **Playwright project name** (not the browser engine), so with the default project name `chromium`, a rule like `{ in: 'chrome' }` won't match — name your Playwright projects to line up with your `in:` rules, or scope rules via `kinds`/`stories`.
