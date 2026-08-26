@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.7] - 2026-08-26
+
+### Added
+
+- Nest one describe per story title segment
+
+### Documentation
+
+- Add nested describe titles design spec
+- Add nested describe titles implementation plan
+- Note nested describes and --grep caveat
+
+### Fixed
+
+- Escape backslashes in generated titles and story names
+
+### Miscellaneous
+
+- Upgrade bun to 1.4.0
 ## [0.0.6] - 2026-08-24
 
 ### Added
