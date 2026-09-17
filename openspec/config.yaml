@@ -1,0 +1,104 @@
+schema: spec-driven
+
+context: |
+  strybk (@crvy/strybk) is a generator-first Playwright screenshot testing
+  tool for Storybook. `crvy-strybk generate` reads a running Storybook's
+  index.json and writes Playwright spec files next to story files; at runtime
+  the generated suite renders one nested describe per title segment and one
+  test per story, reading merged `parameters.creevey` (captureElement, skip,
+  ignoreElements) from the running Storybook — no Storybook addon required.
+  Published to npm; consumers get the CLI plus the ., ./config, and
+  ./playwright export surfaces.
+
+  Tech stack:
+  - Runtime: Bun (never npm/npx for dev tasks; use `bun`, `bun test`,
+    `bun run <script>`, `bunx`); consumers run Node 22+ or Bun
+  - Language: strict TypeScript, ESM with .js import specifiers
+  - Build: tsc via tsconfig.build.json into dist/src (no bundler)
+  - Index fetch: global `fetch` (no HTTP client dependency)
+  - Runtime dependencies are deliberately minimal; `glob` is the only one
+
+  Key conventions:
+  - Error extraction: `error instanceof Error ? error.message : String(error)`
+  - Never add lint-disable or type-ignore comments — fix the underlying issue
+  - max-lines / max-lines-per-function failures are a design signal: split
+    the file or extract functions; do not compress formatting to game limits
+  - oxlint/oxfmt for lint and format; knip guards unused exports; jscpd
+    guards duplication
+  - Tests live in tests/*.test.ts, run with `bun test`, and stub the
+    Storybook index and filesystem — no network or running Storybook in tests
+
+  Surfaces that must stay in sync when behavior changes:
+  - CLI (src/cli.ts, bin crvy-strybk): arg parsing, help text, index fetch,
+    config loading and validation, dry-run vs write behavior
+  - Generator (src/generate/): story discovery, index-to-file matching,
+    spec rendering, generated-region handling, orphan deletion
+  - Runtime fixtures (src/playwright/): test/expect/switchStory behavior and
+    creevey parameter resolution inside the browser
+  - Public exports: ., ./config, ./playwright (package.json exports)
+
+  Verification commands:
+  - `bun test tests/<name>.test.ts` for focused tests
+  - `bun run typecheck`, `bun run lint`, `bun run format:check`
+  - `bun run check` is the full gate: lint, typecheck, format:check, knip,
+    test:bun, duplicates, publint
+
+rules:
+  proposal:
+    - Include a "Non-goals" section listing explicitly out-of-scope behavior
+    - For each declared capability, state what concretely breaks or stays
+      missing without it; a capability justified only by an anticipated
+      need belongs in Non-goals rather than in scope
+    - Name the existing capability or module that already covers a declared
+      capability where one does, and either extend it or say why a separate
+      one is needed
+    - Reference existing capability specs under openspec/specs/ that the
+      change modifies, and docs pages it affects
+    - Keep proposals under 500 words; detail belongs in design.md
+  specs:
+    - Requirements use SHALL statements; every requirement has at least one
+      `#### Scenario:` with WHEN/THEN
+    - Cover both output surfaces a change can affect — the spec files written
+      by `generate` and the runtime behavior of the generated tests — not
+      just the one that motivated the change
+    - Spec the generated spec file shape (nested describes, imports, creevey
+      wiring) where relevant, plus CLI contract changes (flags, exit codes,
+      help text)
+    - Never log or expose credentials or token-bearing URLs
+  design:
+    - For new dependencies, justify why the existing stack (glob, tsc,
+      Playwright peer dependency) cannot cover the need — strybk ships a
+      minimal runtime dependency surface on purpose
+    - Before introducing a new module, name the existing one that covers the
+      need or state that none does — the dependency question one level in
+    - State impact on the published package surface (exports map, bin,
+      peer dependency on @playwright/test, dist/ layout) for any
+      consumer-visible change
+  tasks:
+    - Break tasks into independently verifiable chunks; order them
+      test-first (failing test before implementation)
+    - Every task ends with its verification command (`bun test
+      tests/<name>.test.ts` and `bun run typecheck`)
+    - Final task is always the full gate pass (`bun run check`) and any
+      affected docs update
+
+operations:
+  apply:
+    guidance:
+      - Follow test-driven-development — write the failing test, watch it
+        fail, implement, watch it pass
+      - Check off tasks.md checkboxes as each task completes; keep the file
+        current as filesystem state
+      - Keep test output summaries concise; quote only the failing excerpts
+      - Commit each tasks.md section in its own commit as it completes; the
+        tasks.md checkbox state lands in the same commit as the work
+      - The change folder (openspec/changes/<name>/) rides with the code on
+        the same branch/PR; never commit implementation without artifacts
+  archive:
+    guidance:
+      - Before archiving, confirm all tasks.md checkboxes are complete and
+        `openspec validate --strict` passes
+      - Update docs whose behavior changed, in the same commit or PR as the
+        archive
+      - Archive after the PR merges, as a small follow-up commit on main —
+        not inside the implementation branch
