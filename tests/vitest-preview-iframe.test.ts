@@ -196,6 +196,68 @@ describe("waitForPreviewWindow", () => {
       expect(rejection.message).toContain("storybook build");
     }
   });
+
+  it("waits until the preview exposes a populated story index", async () => {
+    const { win } = createPreviewWindow();
+    const preview = win.__STORYBOOK_PREVIEW__ as { extract?: () => unknown };
+    const fullExtract = preview.extract;
+    let populated = false;
+
+    preview.extract = (): unknown => (populated ? fullExtract?.() : {});
+
+    let rejection: unknown;
+
+    try {
+      await waitForPreviewWindow({
+        url: "/storybook/iframe.html",
+        acquireWindow: () => {
+          populated = true;
+
+          return win;
+        },
+        pollIntervalMs: 1,
+        timeoutMs: 20,
+      });
+    } catch (error) {
+      rejection = error;
+    }
+
+    expect(rejection).toBeUndefined();
+  });
+
+  it("treats a Storybook 9 pre-initialization extract() throw as not ready yet", async () => {
+    const { win } = createPreviewWindow();
+    const preview = win.__STORYBOOK_PREVIEW__ as { extract?: () => unknown };
+    const fullExtract = preview.extract;
+    let initialized = false;
+
+    preview.extract = (): unknown => {
+      if (!initialized) {
+        throw new Error("Called `Preview.extract()` before initialization.");
+      }
+
+      return fullExtract?.();
+    };
+
+    let rejection: unknown;
+
+    try {
+      await waitForPreviewWindow({
+        url: "/storybook/iframe.html",
+        acquireWindow: () => {
+          initialized = true;
+
+          return win;
+        },
+        pollIntervalMs: 1,
+        timeoutMs: 20,
+      });
+    } catch (error) {
+      rejection = error;
+    }
+
+    expect(rejection).toBeUndefined();
+  });
 });
 
 describe("createEmbeddedPreview", () => {
@@ -277,7 +339,7 @@ describe("createEmbeddedPreview", () => {
 
     await preview.switchStory("button--default");
 
-    expect(preview.readStories()).toEqual({
+    expect(await preview.readStories()).toEqual({
       "button--default": { title: "Button", name: "Default" },
     });
   });
@@ -290,7 +352,7 @@ describe("createEmbeddedPreview", () => {
     await preview.load();
 
     expect(iframe.src).toBe("/storybook/iframe.html");
-    expect(preview.readStories()).toEqual({
+    expect(await preview.readStories()).toEqual({
       "button--default": { title: "Button", name: "Default" },
     });
 

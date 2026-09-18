@@ -128,5 +128,5 @@ export const updateGlobalsInPage = ({ win, globals }: UpdateGlobalsArgs): void =
   channel.emit("updateGlobals", { globals });
 };
 
-export const extractPreviewState = (win?: StorybookPreviewWindow): unknown =>
-  (win ?? window).__STORYBOOK_PREVIEW__?.extract?.();
+export const extractPreviewState = (win?: StorybookPreviewWindow): Promise<unknown> =>
+  Promise.resolve((win ?? window).__STORYBOOK_PREVIEW__?.extract?.());

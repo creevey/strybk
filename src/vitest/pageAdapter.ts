@@ -5,13 +5,29 @@
  * inside the same-origin preview.
  */
 
-import type { Locator } from "@vitest/browser/context";
-import { page } from "@vitest/browser/context";
+import type { Locator } from "vitest/browser";
+import { locators, page } from "vitest/browser";
 
 import type { StorybookGlobals } from "../config.js";
 import type { StoriesRaw } from "../storybook/creeveyParams.js";
 import { updateGlobalsInPage } from "../storybook/inPage.js";
 import { getSharedPreview, getSharedPreviewElement } from "./preview.js";
+
+declare module "vitest/browser" {
+  interface LocatorSelectors {
+    /**
+     * Locates an element by CSS selector inside the locator's scope.
+     * Registered by @crvy/strybk for the embedded Storybook preview.
+     */
+    getByCSS(css: string): Locator;
+  }
+}
+
+locators.extend({
+  getByCSS(css: string): string {
+    return `css=${css}`;
+  },
+});
 
 export interface StrybkLocator {
   readonly selector: string;
@@ -37,25 +53,20 @@ export const isStrybkLocator = (value: unknown): value is StrybkLocator =>
 
 export class StrybkPageAdapter implements StrybkPage {
   locator(selector: string): StrybkLocator {
-    const iframe = requireSharedIframe();
-    const element = iframe.contentDocument?.querySelector(selector) ?? null;
+    const frame = page.frameLocator(page.elementLocator(requireSharedIframe()));
 
-    if (element === null) {
-      throw new Error(`No element matches '${selector}' in the Storybook preview`);
-    }
-
-    return { selector, vitestLocator: page.elementLocator(element) };
+    return { selector, vitestLocator: frame.getByCSS(selector) };
   }
 
-  async load(): Promise<void> {
-    await getSharedPreview().load();
+  load(): Promise<void> {
+    return getSharedPreview().load();
   }
 
-  async switchStory(storyId: string): Promise<void> {
-    await getSharedPreview().switchStory(storyId);
+  switchStory(storyId: string): Promise<void> {
+    return getSharedPreview().switchStory(storyId);
   }
 
-  readStories(): StoriesRaw {
+  readStories(): Promise<StoriesRaw> {
     return getSharedPreview().readStories();
   }
 

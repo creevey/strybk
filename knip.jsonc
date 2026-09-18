@@ -3,6 +3,12 @@
   "entry": ["src/index.ts", "src/cli.ts", "src/vitest/index.ts", "src/vite/index.ts"],
   "project": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.sh"],
   "ignore": ["dist/**"],
-  "ignoreDependencies": ["@playwright/test", "@vitest/browser-playwright", "glob", "vitest"],
+  "ignoreDependencies": [
+    "@playwright/test",
+    "@vitest/browser",
+    "@vitest/browser-playwright",
+    "glob",
+    "vitest",
+  ],
   "ignoreExportsUsedInFile": true,
 }

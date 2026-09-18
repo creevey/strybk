@@ -49,7 +49,7 @@ export interface EmbeddedPreview {
   readonly iframe: EmbeddedIframe;
   load(): Promise<void>;
   switchStory(storyId: string): Promise<void>;
-  readStories(): StoriesRaw;
+  readStories(): Promise<StoriesRaw>;
 }
 
 export const DEFAULT_PREVIEW_PREFIX = "/storybook";
@@ -89,8 +89,19 @@ export const previewUnreachableError = (url: string): Error =>
     `Storybook preview at ${url} is unreachable. Run \`storybook build\` and serve the built output through the @crvy/strybk/vite proxy: dev-mode Storybook servers are not supported under Vitest.`,
   );
 
-const isPreviewReady = (win: PreviewWindowLike | null): win is PreviewWindowLike =>
-  win !== null && win.__STORYBOOK_PREVIEW__ !== undefined;
+const isPreviewReady = async (win: PreviewWindowLike | null): Promise<boolean> => {
+  if (win === null || win.__STORYBOOK_PREVIEW__ === undefined) {
+    return false;
+  }
+
+  try {
+    const extracted = await extractPreviewState(win);
+
+    return typeof extracted === "object" && extracted !== null && Object.keys(extracted).length > 0;
+  } catch {
+    return false;
+  }
+};
 
 export const previewHomeUrl = (prefix?: string): string => {
   const configured = prefix ?? DEFAULT_PREVIEW_PREFIX;
@@ -107,7 +118,7 @@ const pollPreviewWindow = async (args: {
 }): Promise<PreviewWindowLike> => {
   const win = args.acquireWindow();
 
-  if (isPreviewReady(win)) {
+  if (win !== null && (await isPreviewReady(win))) {
     return win;
   }
 
@@ -200,10 +211,10 @@ export const createEmbeddedPreview = (deps: CreateEmbeddedPreviewDeps): Embedded
 
       await selectStoryInPage({ win, storyId });
     },
-    readStories(): StoriesRaw {
+    async readStories(): Promise<StoriesRaw> {
       const win = iframe?.contentWindow ?? null;
 
-      return toStoriesRaw(extractPreviewState(win ?? undefined));
+      return toStoriesRaw(await extractPreviewState(win ?? undefined));
     },
   };
 };
