@@ -33,8 +33,14 @@
   "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
+      "browser": {
+        "types": "./dist/src/vitest/index.d.ts",
+        "default": "./dist/src/vitest/index.js"
+      },
+      "default": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      }
     },
     "./config": {
       "types": "./dist/src/config.d.ts",
@@ -43,6 +49,10 @@
     "./playwright": {
       "types": "./dist/src/playwright/index.d.ts",
       "default": "./dist/src/playwright/index.js"
+    },
+    "./vite": {
+      "types": "./dist/src/vite/index.d.ts",
+      "default": "./dist/src/vite/index.js"
     }
   },
   "publishConfig": {
@@ -74,6 +84,7 @@
     "@playwright/test": "1.59.1",
     "@types/bun": "^1.4.0",
     "@types/node": "25.9.0",
+    "@vitest/browser": "^4.1.11",
     "git-cliff": "2.13.1",
     "jscpd": "^4.0.8",
     "knip": "^6.3.0",
@@ -82,10 +93,20 @@
     "oxlint-tsgolint": "^0.22.1",
     "publint": "^0.3.18",
     "typescript": "5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.59.0"
+    "@playwright/test": ">=1.59.0",
+    "@vitest/browser-playwright": ">=4 <5",
+    "vitest": ">=4 <5"
+  },
+  "peerDependenciesMeta": {
+    "@vitest/browser-playwright": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
   },
   "engines": {
     "bun": ">=1.4.0",

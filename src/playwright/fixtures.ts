@@ -15,6 +15,8 @@ import type {
   StoriesRaw,
 } from "../storybook/creeveyParams.js";
 import { resolveCreeveyStory } from "../storybook/creeveyParams.js";
+import { animationDisablerStyles } from "../storybook/animations.js";
+import { toStorybookGlobals } from "../storybook/globals.js";
 import { createChannelDriver } from "../storybook/channelDriver.js";
 import { extractStories } from "../storybook/extract.js";
 import { loadPlaywrightTestRuntime } from "./runtime.js";
@@ -43,45 +45,14 @@ type MetadataWithStorybookGlobals = {
   storybookGlobals?: unknown;
 };
 
-const animationDisablerStyles = [
-  "*, *::before, *::after {",
-  "  animation: none !important;",
-  "  caret-color: transparent !important;",
-  "  cursor: none !important;",
-  "  transition: none !important;",
-  "}",
-  "html {",
-  "  scroll-behavior: auto !important;",
-  "}",
-].join("\n");
-
 const storybookReadyTimeoutMs = 10_000;
 
 const channelDriver = createChannelDriver();
 
-const isStorybookGlobalValue = (value: unknown): value is StorybookGlobals[string] =>
-  value === null ||
-  value === undefined ||
-  typeof value === "boolean" ||
-  typeof value === "number" ||
-  typeof value === "string";
-
-const getStorybookGlobals = (testInfo: TestInfo): StorybookGlobals | undefined => {
-  const metadata = testInfo.project.metadata as MetadataWithStorybookGlobals | undefined;
-  const storybookGlobals = metadata?.storybookGlobals;
-
-  if (
-    typeof storybookGlobals !== "object" ||
-    storybookGlobals === null ||
-    Array.isArray(storybookGlobals)
-  ) {
-    return undefined;
-  }
-
-  return Object.fromEntries(
-    Object.entries(storybookGlobals).filter(([, value]) => isStorybookGlobalValue(value)),
-  ) as StorybookGlobals;
-};
+const getStorybookGlobals = (testInfo: TestInfo): StorybookGlobals | undefined =>
+  toStorybookGlobals(
+    (testInfo.project.metadata as MetadataWithStorybookGlobals | undefined)?.storybookGlobals,
+  );
 
 const resolveIframeUrl = (baseURL: string | undefined): string =>
   baseURL !== undefined && baseURL.length > 0
