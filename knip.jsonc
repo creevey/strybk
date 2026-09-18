@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/knip/schema.json",
-  "entry": ["src/index.ts", "src/cli.ts", "src/vitest/index.ts"],
+  "entry": ["src/index.ts", "src/cli.ts", "src/vitest/index.ts", "src/vite/index.ts"],
   "project": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.sh"],
   "ignore": ["dist/**"],
   "ignoreDependencies": ["@playwright/test", "@vitest/browser-playwright", "glob", "vitest"],

@@ -15,8 +15,8 @@
 
 ## 3. Vite proxy plugin
 
-- [ ] 3.1 Write failing tests asserting the plugin's returned config (default `/storybook` prefix, configurable prefix and target origin, rewrite stripping the prefix), then implement `src/vite/` as a plain-object plugin with no `vite` runtime dependency. Verification: `bun test tests/vite-plugin.test.ts && bun run typecheck`
-- [ ] 3.2 Write failing tests for the upstream-failure path (prefix request failing against the origin propagates the upstream status to the runtime's actionable error), then implement it. Verification: `bun test tests/vite-plugin.test.ts && bun run typecheck`
+- [x] 3.1 Write failing tests asserting the plugin's returned config (default `/storybook` prefix, configurable prefix and target origin, rewrite stripping the prefix), then implement `src/vite/` as a plain-object plugin with no `vite` runtime dependency. Verification: `bun test tests/vite-plugin.test.ts && bun run typecheck`
+- [x] 3.2 Write failing tests for the upstream-failure path (prefix request failing against the origin propagates the upstream status to the runtime's actionable error), then implement it. Verification: `bun test tests/vite-plugin.test.ts && bun run typecheck`
 
 ## 4. Manual browser harness
 
