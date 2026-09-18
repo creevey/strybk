@@ -61,7 +61,50 @@ export const Default = {
 };
 ```
 
-**Prerequisites for running specs:** `@playwright/test` (peer dependency) and browser binaries (`npx playwright install`). The `crvy-strybk generate` command itself needs neither — only a running Storybook to fetch `index.json`.
+**Prerequisites for running specs:** `@playwright/test` (peer dependency) and browser binaries (`npx playwright install`). The `crvy-strybk generate` command itself needs neither — only a running Storybook to fetch `index.json`. To run the same specs under Vitest Browser Mode instead, see [Vitest Browser Mode](#vitest-browser-mode): `vitest` + `@vitest/browser-playwright` (optional peers) and a built Storybook.
+
+## Vitest Browser Mode
+
+The same generated spec files run under either runner — no generator flag, no config change. `playwright test` and `vitest run` both discover `*.spec.ts` by default; the `@crvy/strybk` import resolves to the Playwright runtime in Node and to the Vitest runtime inside Vitest Browser Mode (via the `browser` package export condition). Pick a runner by choosing which command you execute.
+
+Requirements and wiring:
+
+1. **Build your Storybook.** The Vitest path serves `storybook build` output through a proxy; dev-mode Storybook servers are not supported (their absolute vite dev asset URLs cannot resolve under the proxy). The dev loop stays on Playwright.
+
+   ```sh
+   npx storybook build
+   npx http-server storybook-static -p 6007   # or any static server
+   ```
+
+2. **Wire the proxy plugin** in `vitest.config.ts`. It mounts the Storybook origin under a reserved prefix (default `/storybook`, configurable) on the Vitest dev server so the embedded preview iframe is same-origin:
+
+   ```ts
+   import { strybkStorybookProxy } from "@crvy/strybk/vite";
+   import { playwright } from "@vitest/browser-playwright";
+   import { defineConfig } from "vitest/config";
+
+   export default defineConfig({
+     plugins: [strybkStorybookProxy({ target: "http://127.0.0.1:6007" })],
+     test: {
+       browser: {
+         enabled: true,
+         provider: playwright(),
+         headless: true,
+         instances: [{ browser: "chromium", viewport: { width: 1280, height: 720 } }],
+       },
+       provide: { strybkBrowser: "chromium" },
+     },
+   });
+   ```
+
+   Reserve the prefix: requests under `/storybook` are proxied to the target, so keep it free of your own routes (or pass a different `prefix`).
+
+3. **Provide the browser identity** (`strybkBrowser`) so `skip` `in:` rules match like Playwright project names — the default is `chromium`. Optionally provide `strybkGlobals` (applied to the preview through the Storybook channel before capture), mirroring the Playwright path's `storybookGlobals` project metadata.
+
+Notes:
+
+- Baselines live under `__screenshots__/` next to the specs. The first run writes the baseline and fails ("No existing reference screenshot found; a new one was created"); seed baselines without failing with `vitest run --update`. Each runner keeps its own baseline tree — do not share them across runners.
+- Capture parity is pinned by the runtime: CSS-pixel scale (`scale: "css"`), Playwright's default comparator threshold (`0.2`), and animations disabled. One caveat: keep the instance viewport within the headless browser window — Vitest scales its tester iframe when the viewport does not fit, which shrinks captures (this affects Vitest's own `page.screenshot()` identically).
 
 ## Upgrading from 0.0.x
 

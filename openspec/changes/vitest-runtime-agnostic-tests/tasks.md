@@ -34,5 +34,5 @@
 
 ## 5. Docs and full gate
 
-- [ ] 5.1 Update `README.md`: add a Vitest Browser Mode section (built Storybook requirement, plugin wiring, instance `provide` conventions, prefix reservation, first-run baseline behavior, dev-loop stays on Playwright, dual-runner discovery note) and extend Prerequisites. Verification: `bun run format:check`
-- [ ] 5.2 Run the full gate and fix anything it surfaces (lint, typecheck, format, knip, tests, duplication, publint). Verification: `bun run check`
+- [x] 5.1 Update `README.md`: add a Vitest Browser Mode section (built Storybook requirement, plugin wiring, instance `provide` conventions, prefix reservation, first-run baseline behavior, dev-loop stays on Playwright, dual-runner discovery note) and extend Prerequisites. Verification: `bun run format:check`
+- [x] 5.2 Run the full gate and fix anything it surfaces (lint, typecheck, format, knip, tests, duplication, publint). Verification: `bun run check`
