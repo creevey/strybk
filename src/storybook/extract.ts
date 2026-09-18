@@ -1,12 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import type { StoriesRaw } from "./creeveyParams.js";
-
-interface StorybookPreviewWindow extends Window {
-  __STORYBOOK_PREVIEW__?: {
-    extract?: () => unknown;
-  };
-}
+import { extractPreviewState } from "./inPage.js";
 
 const isStoriesRaw = (value: unknown): value is StoriesRaw =>
   typeof value === "object" && value !== null;
@@ -20,10 +15,4 @@ export const toStoriesRaw = (value: unknown): StoriesRaw => {
 };
 
 export const extractStories = async (page: Page): Promise<StoriesRaw> =>
-  toStoriesRaw(
-    await page.evaluate(() => {
-      const preview = (window as StorybookPreviewWindow).__STORYBOOK_PREVIEW__;
-
-      return preview?.extract?.();
-    }),
-  );
+  toStoriesRaw(await page.evaluate(extractPreviewState, undefined));
