@@ -123,9 +123,12 @@ describe("renderScreenshotSpec", () => {
         "  test.describe('Комментарии', () => {",
         "    test.describe('CommentLine', () => {",
         "      test('Comment line', async ({ sharedPage, creevey }) => {",
-        "        const { skip, reason, captureElement, ignoreElements } = creevey.params('components-комментарии-commentline--comment-line-story');",
+        "        const { skip, reason, captureElement, ignoreElements, delay } = creevey.params('components-комментарии-commentline--comment-line-story');",
         "        test.skip(skip, reason);",
         "        await switchStory(sharedPage, 'components-комментарии-commentline--comment-line-story');",
+        "        if (delay > 0) {",
+        "          await sharedPage.waitForTimeout(delay);",
+        "        }",
         "        const target = captureElement ? sharedPage.locator(captureElement) : sharedPage;",
         "        await expect(target).toHaveScreenshot({",
         "          mask: ignoreElements.map((selector) => sharedPage.locator(selector)),",
@@ -266,6 +269,49 @@ describe("generateScreenshots", () => {
 
     expect(outputs).toHaveLength(1);
     expect(outputs[0]?.content).toContain("await switchStory(sharedPage, 'button--default')");
+  });
+
+  it("emits a delay wait in generated specs for stories with creevey delay", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "strybk-generate-"));
+    temporaryDirectories.push(tempDir);
+
+    const storyFilePath = join(tempDir, "components", "__stories__", "Button.stories.tsx");
+    mkdirSync(dirname(storyFilePath), { recursive: true });
+    writeFileSync(
+      storyFilePath,
+      [
+        "export default { title: 'Button' };",
+        "export const Default = {};",
+        "Default.parameters = { creevey: { delay: 300 } };",
+      ].join("\n"),
+    );
+
+    const config = defineConfig({
+      storybookUrl: "http://localhost:6060",
+      storyGlobs: [join(tempDir, "components", "**", "*.stories.tsx")],
+      resolveSpecPath: ({ storyFilePath: inputPath }) =>
+        inputPath
+          .replace("/__stories__/", "/__screenshots__/")
+          .replace(".stories.tsx", ".screenshots.spec.ts"),
+    });
+
+    const outputs = await generateScreenshots({
+      config,
+      indexEntries: [
+        {
+          id: "button--default",
+          title: "Button",
+          name: "Default",
+          exportName: "Default",
+          importPath: "./components/__stories__/Button.stories.tsx",
+        },
+      ],
+      readExistingFile: () => null,
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.content).toContain("if (delay > 0) {");
+    expect(outputs[0]?.content).toContain("await sharedPage.waitForTimeout(delay);");
   });
 
   it("generates specs for stories that rely on Storybook auto-titles via importPath", async () => {

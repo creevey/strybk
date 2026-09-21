@@ -46,6 +46,7 @@ Generated suites nest one `test.describe` per title segment — `Components/Butt
 - `captureElement: null` (or unset) — captures the viewport.
 - `skip: { '<reason>': { in, kinds, stories } }` — marks the test skipped with `<reason>`. Note: `in` matches the **Playwright project name** (not the browser engine), so with the default project name `chromium`, a rule like `{ in: 'chrome' }` won't match — name your Playwright projects to line up with your `in:` rules, or scope rules via `kinds`/`stories`.
 - `ignoreElements: '<selector>' | ['<selector>']` — masks those elements via `toHaveScreenshot({ mask })`.
+- `delay: <ms>` — waits `<ms>` milliseconds after switching to the story before resolving the capture target. Non-positive or non-numeric values are treated as `0`.
 
 Example:
 

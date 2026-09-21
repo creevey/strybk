@@ -19,9 +19,12 @@ const renderTest = (story: RenderableStory, depth: number): string => {
 
   return [
     `${indent}test('${escapeSingleQuotes(story.name)}', async ({ sharedPage, creevey }) => {`,
-    `${indent}  const { skip, reason, captureElement, ignoreElements } = creevey.params('${story.id}');`,
+    `${indent}  const { skip, reason, captureElement, ignoreElements, delay } = creevey.params('${story.id}');`,
     `${indent}  test.skip(skip, reason);`,
     `${indent}  await switchStory(sharedPage, '${story.id}');`,
+    `${indent}  if (delay > 0) {`,
+    `${indent}    await sharedPage.waitForTimeout(delay);`,
+    `${indent}  }`,
     `${indent}  const target = captureElement ? sharedPage.locator(captureElement) : sharedPage;`,
     `${indent}  await expect(target).toHaveScreenshot({`,
     `${indent}    mask: ignoreElements.map((selector) => sharedPage.locator(selector)),`,
