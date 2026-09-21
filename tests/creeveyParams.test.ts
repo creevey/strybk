@@ -82,6 +82,7 @@ describe("normalizeCreeveyParams", () => {
       skip: false,
       captureElement: null,
       ignoreElements: [],
+      delay: 0,
     });
   });
 
@@ -105,6 +106,13 @@ describe("normalizeCreeveyParams", () => {
     expect(normalizeCreeveyParams({ ignoreElements: null }, browser, meta).ignoreElements).toEqual(
       [],
     );
+  });
+
+  it("normalizes delay (positive number stays, invalid -> 0)", () => {
+    expect(normalizeCreeveyParams({ delay: 500 }, browser, meta).delay).toBe(500);
+    expect(normalizeCreeveyParams({ delay: -1 }, browser, meta).delay).toBe(0);
+    expect(normalizeCreeveyParams({ delay: Number.NaN }, browser, meta).delay).toBe(0);
+    expect(normalizeCreeveyParams({}, browser, meta).delay).toBe(0);
   });
 
   it("resolves skip against browser/kind/name and carries the reason", () => {

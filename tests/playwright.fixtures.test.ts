@@ -262,6 +262,7 @@ describe("createStrybkFixtures", () => {
       reason: "no ie",
       captureElement: null,
       ignoreElements: [],
+      delay: 0,
     });
   });
 });
