@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8] - 2026-09-21
+
+### Added
+
+- Extract runner-agnostic in-page storybook functions
+- Add vitest browser-mode runtime branch
+- Add @crvy/strybk/vite storybook proxy plugin
+- Normalize parameters.creevey.delay
+- Wait for parameters.creevey.delay before capture in generated specs
+
+### Documentation
+
+- Add vitest browser mode guide to readme
+
+### Fixed
+
+- Harden vitest runtime from manual browser harness findings
+- Support waitForTimeout in the vitest shared page adapter
+
+### Miscellaneous
+
+- Set up openspec workflow and agent configs
+
+### Other
+
+- Merge pull request #1 from creevey/feat/delay-param
+
+feat: support parameters.creevey.delay before capture
 ## [0.0.7] - 2026-08-26
 
 ### Added
