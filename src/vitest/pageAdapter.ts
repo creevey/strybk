@@ -12,6 +12,7 @@ import type { StorybookGlobals } from "../config.js";
 import type { StoriesRaw } from "../storybook/creeveyParams.js";
 import { updateGlobalsInPage } from "../storybook/inPage.js";
 import { getSharedPreview, getSharedPreviewElement } from "./preview.js";
+import { waitForTimeout } from "./wait.js";
 
 declare module "vitest/browser" {
   interface LocatorSelectors {
@@ -36,6 +37,7 @@ export interface StrybkLocator {
 
 export interface StrybkPage {
   locator(selector: string): StrybkLocator;
+  waitForTimeout(ms: number): Promise<void>;
 }
 
 const requireSharedIframe = (): HTMLIFrameElement => {
@@ -64,6 +66,10 @@ export class StrybkPageAdapter implements StrybkPage {
 
   switchStory(storyId: string): Promise<void> {
     return getSharedPreview().switchStory(storyId);
+  }
+
+  waitForTimeout(ms: number): Promise<void> {
+    return waitForTimeout(ms);
   }
 
   readStories(): Promise<StoriesRaw> {
