@@ -78,6 +78,7 @@ export interface CreeveyStoryParams {
   captureElement?: string | null;
   ignoreElements?: string | string[] | null;
   skip?: SkipOptions;
+  delay?: number;
 }
 
 export interface NormalizedCreeveyParams {
@@ -85,6 +86,7 @@ export interface NormalizedCreeveyParams {
   reason?: string;
   captureElement: string | null;
   ignoreElements: string[];
+  delay: number;
 }
 
 export interface StoriesRaw {
@@ -113,7 +115,7 @@ export const normalizeCreeveyParams = (
   meta: { title: string; name: string },
 ): NormalizedCreeveyParams => {
   if (raw === undefined) {
-    return { skip: false, captureElement: null, ignoreElements: [] };
+    return { skip: false, captureElement: null, ignoreElements: [], delay: 0 };
   }
 
   const skipResult = raw.skip === undefined ? false : shouldSkip(browser, meta, raw.skip);
@@ -123,6 +125,7 @@ export const normalizeCreeveyParams = (
     reason: typeof skipResult === "string" ? skipResult : undefined,
     captureElement: raw.captureElement === undefined ? null : raw.captureElement,
     ignoreElements: toArray(raw.ignoreElements),
+    delay: typeof raw.delay === "number" && raw.delay > 0 ? raw.delay : 0,
   };
 };
 
