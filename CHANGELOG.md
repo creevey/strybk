@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.9] - 2026-09-22
+
+### Added
+
+- Assemble the vitest test collector independent of collector shape
+- Own describe in generated specs and both runtimes
+- Portable locator subset on the vitest shared page
+
+### Documentation
+
+- Document the portable vitest locator subset
+
+### Miscellaneous
+
+- **specs:** Archive vitest-runtime-agnostic-tests
+
+### Testing
+
+- Record the vitest 4.0.18 and 4.1.11 browser harness runs
 ## [0.0.8] - 2026-09-21
 
 ### Added

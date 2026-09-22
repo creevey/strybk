@@ -1,6 +1,6 @@
 {
   "name": "@crvy/strybk",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Generator-first Playwright screenshot testing for Storybook.",
   "keywords": [
     "crvy",
