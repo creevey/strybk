@@ -6,12 +6,13 @@
 
 import type { Locator } from "vitest/browser";
 import type { TestContext } from "vitest";
-import { expect as vitestExpect, inject, test as vitestTest } from "vitest";
+import { describe, expect as vitestExpect, inject, test as vitestTest } from "vitest";
 
 import type { CreeveyApi, NormalizedCreeveyParams } from "../storybook/creeveyParams.js";
 import { resolveCreeveyStory } from "../storybook/creeveyParams.js";
 import { toMatchScreenshotOptions, toScreenshotName } from "./assertion.js";
 import type { ToHaveScreenshotOptions } from "./assertion.js";
+import { assembleTestCollector } from "./collector.js";
 import { readStrybkIdentity } from "./identity.js";
 import { getSharedStrybkPage, isStrybkLocator } from "./pageAdapter.js";
 import { StrybkPageAdapter } from "./pageAdapter.js";
@@ -77,23 +78,16 @@ const strybkTestSkip = (...args: Parameters<typeof collectionTimeSkip>): void =>
   collectionTimeSkip(...args);
 };
 
-const skippedCopyKeys = new Set(["skip", "length", "name", "arguments", "caller"]);
-
-const strybkTest = extendedTest.bind(undefined);
-
-for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(extendedTest))) {
-  if (!skippedCopyKeys.has(key)) {
-    Object.defineProperty(strybkTest, key, descriptor);
-  }
-}
-
-Object.defineProperty(strybkTest, "skip", {
-  value: strybkTestSkip,
-  writable: true,
-  configurable: true,
+const strybkTest = assembleTestCollector({
+  collector: extendedTest.bind(undefined),
+  extended: extendedTest,
+  fallbackDescribe: describe,
+  skip: strybkTestSkip,
 });
 
 export const test = strybkTest;
+
+export { describe };
 
 export async function switchStory(sharedPage: StrybkPage, storyId: string): Promise<void> {
   if (!(sharedPage instanceof StrybkPageAdapter)) {
