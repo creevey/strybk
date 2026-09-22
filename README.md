@@ -40,7 +40,7 @@ export default defineConfig({
 
 Each generated spec renders a Playwright test per story. At runtime, `parameters.creevey` (read from the running Storybook, merged across global / kind / story levels) drives capture and skip behavior — no Storybook addon required:
 
-Generated suites nest one `test.describe` per title segment — `Components/Button` becomes `describe('Components') > describe('Button')` — so the Playwright HTML reporter shows a collapsible tree. Snapshot filenames are unaffected. Note that `--grep` patterns containing `/` no longer match (Playwright greps the space-joined title path); grep by a single segment instead, e.g. `--grep CommentLine`.
+Generated suites import `describe, test, expect, switchStory` from `@crvy/strybk` and nest one `describe` per title segment — `Components/Button` becomes `describe('Components') > describe('Button')` — so the Playwright HTML reporter shows a collapsible tree. Snapshot filenames are unaffected. Note that `--grep` patterns containing `/` no longer match (Playwright greps the space-joined title path); grep by a single segment instead, e.g. `--grep CommentLine`.
 
 - `captureElement: '<selector>'` — captures `page.locator('<selector>')`.
 - `captureElement: null` (or unset) — captures the viewport.
@@ -106,6 +106,27 @@ Notes:
 
 - Baselines live under `__screenshots__/` next to the specs. The first run writes the baseline and fails ("No existing reference screenshot found; a new one was created"); seed baselines without failing with `vitest run --update`. Each runner keeps its own baseline tree — do not share them across runners.
 - Capture parity is pinned by the runtime: CSS-pixel scale (`scale: "css"`), Playwright's default comparator threshold (`0.2`), and animations disabled. One caveat: keep the instance viewport within the headless browser window — Vitest scales its tester iframe when the viewport does not fit, which shrinks captures (this affects Vitest's own `page.screenshot()` identically).
+- Generated specs import `describe` from the package. Regenerate to adopt the new shape; un-regenerated specs that call `test.describe` keep collecting through the runtime bridge on every supported vitest 4.x.
+- Tested against vitest 4.0.18 and 4.1.11 (peer range `vitest >=4 <5`).
+
+Portable interaction subset for manual regions (`sharedPage.locator(...)`):
+
+| Portable API                                       | Behavior                                                                                                  |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `click`, `dblClick`, `hover`, `fill`, `clear`      | Delegates to the Vitest locator; options (for example `hover({ position })`) pass through to the provider |
+| `press`                                            | Accepts Playwright key chords (`Control+A`) and maps them to testing-library keyboard syntax              |
+| `type`                                             | Types text into the element (Vitest's `userEvent.type`)                                                   |
+| `nth(i)`, `first()`, `last()`, `locator(selector)` | Re-wrapped locators; nested `locator()` scopes inside the parent, and masks/capture targets accept them   |
+| `dragTo(target, options)`                          | Maps to Vitest's `dropTo`; accepts Playwright-style `sourcePosition`/`targetPosition`, `force`, `timeout` |
+| `sharedPage.waitForTimeout(ms)`                    | Waits before capture; backs the generated `delay` support                                                 |
+
+Playwright-only APIs — manual regions using them stay single-runner:
+
+- `sharedPage.mouse`
+- Web-first element assertions (`expect(locator).toHaveText(...)` and friends)
+- `waitForLoadState` and the rest of the Playwright `Page`/`Locator` surface
+
+For pointer positioning, the portable replacement for `sharedPage.mouse` is `sharedPage.locator('body').hover({ position: { x, y } })`.
 
 ## Upgrading from 0.0.x
 

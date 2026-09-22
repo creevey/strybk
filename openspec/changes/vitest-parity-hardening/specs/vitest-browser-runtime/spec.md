@@ -9,6 +9,11 @@ Generated spec files SHALL import `describe`, `test`, `expect`, and `switchStory
 - **WHEN** `crvy-strybk generate` runs
 - **THEN** the emitted spec files import `describe`, `test`, `expect`, and `switchStory` from `@crvy/strybk`, nest suites with `describe(...)`, and contain no `test.describe`, no other runner-specific API calls, and no runner option in `--help`
 
+#### Scenario: Generation output is runner-independent
+
+- **WHEN** `crvy-strybk generate` runs
+- **THEN** the emitted spec files are identical no matter which runner will execute them, because the only vocabulary they use is the package's
+
 #### Scenario: Generated shape change is regeneration-only
 
 - **WHEN** a project regenerates specs after upgrading from the previous generator output

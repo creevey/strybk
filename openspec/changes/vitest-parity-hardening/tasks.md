@@ -28,6 +28,6 @@
 
 ## 5. Docs, sequencing, and full gate
 
-- [ ] 5.1 Update `README.md`: generated import shape, the portable locator subset table with Playwright-only APIs (`sharedPage.mouse`, element assertions) and the `hover({ position })` replacement, and the tested vitest versions. Verification: `bun run format:check`
-- [ ] 5.2 Confirm `openspec/changes/vitest-runtime-agnostic-tests/` is archived before this change archives, then run `openspec validate vitest-parity-hardening --strict`. Verification: `openspec validate vitest-parity-hardening --strict`
-- [ ] 5.3 Full gate and fix anything it surfaces (lint, typecheck, format, knip, tests, duplication, publint). Verification: `bun run check`
+- [x] 5.1 Update `README.md`: generated import shape, the portable locator subset table with Playwright-only APIs (`sharedPage.mouse`, element assertions) and the `hover({ position })` replacement, and the tested vitest versions. Verification: `bun run format:check`
+- [x] 5.2 Confirm `openspec/changes/vitest-runtime-agnostic-tests/` is archived before this change archives, then run `openspec validate vitest-parity-hardening --strict`. Verification: `openspec validate vitest-parity-hardening --strict`
+- [x] 5.3 Full gate and fix anything it surfaces (lint, typecheck, format, knip, tests, duplication, publint). Verification: `bun run check`
