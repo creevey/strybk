@@ -1,7 +1,7 @@
 ## 1. Shared in-page Storybook logic
 
 - [x] 1.1 Write failing tests for plain in-page functions (story selection via channel with render/error/timeout settling, globals update, preview state extraction) against fake `window` objects, then extract the `page.evaluate` callback bodies from `src/storybook/channelDriver.ts` and `src/storybook/extract.ts` into exported runner-agnostic functions that the Playwright branch continues to invoke through `evaluate`. Verification: `bun test tests/channelDriver.test.ts && bun test tests/extract.test.ts && bun run typecheck`
-- [ ] 1.2 Confirm the Playwright path is behaviorally unchanged after the extraction: existing fixture and switchStory suites pass unmodified. Verification: `bun test tests/playwright.fixtures.test.ts && bun test tests/switchStory.test.ts && bun run typecheck`
+- [x] 1.2 Confirm the Playwright path is behaviorally unchanged after the extraction: existing fixture and switchStory suites pass unmodified. Verification: `bun test tests/playwright.fixtures.test.ts && bun test tests/switchStory.test.ts && bun run typecheck`
 
 ## 2. Vitest runtime branch
 
