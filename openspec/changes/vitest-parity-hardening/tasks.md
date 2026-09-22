@@ -15,8 +15,16 @@
 
 ## 4. Minimum-version browser harness
 
-- [ ] 4.1 Rebuild strybk, regenerate the harness spec, and run the manual harness on the oldest supported vitest 4.x minor with the full checklist: `describe` collection, capture dimensions, mask, skip identity, `waitForTimeout`, and the `dragTo` scenario. Record results next to this checkbox (harness lives outside the repo). Verification: `bun run typecheck`
-- [ ] 4.2 Run the same harness on the current vitest 4.1.x to confirm no regression against the recorded 0.0.8 results. Record results next to this checkbox. Verification: `bun run typecheck`
+- [x] 4.1 Rebuild strybk, regenerate the harness spec, and run the manual harness on the oldest supported vitest 4.x minor with the full checklist: `describe` collection, capture dimensions, mask, skip identity, `waitForTimeout`, and the `dragTo` scenario. Record results next to this checkbox (harness lives outside the repo). Verification: `bun run typecheck`
+  - Results (2026-09-22, scratch project: storybook 9 web-components-vite build + python static server on 6007, vitest 4.0.18 + @vitest/browser-playwright 4.0.18, chromium headless, local `crvy-strybk generate` against the built `index.json`):
+    - Collection: 8/8 tests collected and passed — 6 generated tests nested with the package `describe`, plus a manual region nested with `test.describe`, which the 0.0.8 runtime could not collect on 4.0.x. The collector fallback works.
+    - Capture dimensions: viewport baselines 1024×720; `captureElement` baseline 992×18. All passed against the baselines seeded under 4.1.11.
+    - Mask: `With Mask` passed against the 4.1.11-seeded baseline.
+    - Skip identity: with `provide: { strybkBrowser: "firefox" }` the story skipped with `[not under chromium]`; under chromium it runs.
+    - `waitForTimeout`: the `delay: 300` story took 468ms vs ~150ms for peers.
+    - `dragTo`: `.dragTo(target, { targetPosition: { x: 0, y: 0 } })` reached the drop target (`dataset.dropped === "true"`).
+- [x] 4.2 Run the same harness on the current vitest 4.1.x to confirm no regression against the recorded 0.0.8 results. Record results next to this checkbox. Verification: `bun run typecheck`
+  - Results (2026-09-22, same scratch project, vitest 4.1.11 + @vitest/browser-playwright 4.1.11): same 8/8 checklist pass — baselines seeded with `vitest run --update` then a clean run, dimensions and mask unchanged (1024×720 viewport, 992×18 element capture), skip identity skipped with `[not under chromium]` under `strybkBrowser: "firefox"`, delay 463ms, `dragTo` assertion passed. No regression against the recorded 0.0.8 results. The harness was left on vitest 4.1.11.
 
 ## 5. Docs, sequencing, and full gate
 
