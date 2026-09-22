@@ -61,8 +61,8 @@ describe("renderScreenshotSpec", () => {
         "test('hover', async ({ sharedPage }) => { await expect(sharedPage).toHaveScreenshot(); });",
     });
 
-    expect(content).toContain("import { test, expect, switchStory } from '@crvy/strybk'");
-    expect(content).toContain("test.describe('Button'");
+    expect(content).toContain("import { describe, test, expect, switchStory } from '@crvy/strybk'");
+    expect(content).toContain("describe('Button'");
     expect(content).toContain("async ({ sharedPage, creevey })");
     expect(content).toContain("creevey.params('button--default')");
     expect(content).toContain("test.skip(skip, reason)");
@@ -116,12 +116,12 @@ describe("renderScreenshotSpec", () => {
 
     expect(content).toBe(
       [
-        "import { test, expect, switchStory } from '@crvy/strybk';",
+        "import { describe, test, expect, switchStory } from '@crvy/strybk';",
         "",
         "// @generated-begin auto-screenshots",
-        "test.describe('Components', () => {",
-        "  test.describe('Комментарии', () => {",
-        "    test.describe('CommentLine', () => {",
+        "describe('Components', () => {",
+        "  describe('Комментарии', () => {",
+        "    describe('CommentLine', () => {",
         "      test('Comment line', async ({ sharedPage, creevey }) => {",
         "        const { skip, reason, captureElement, ignoreElements, delay } = creevey.params('components-комментарии-commentline--comment-line-story');",
         "        test.skip(skip, reason);",
@@ -158,8 +158,8 @@ describe("renderScreenshotSpec", () => {
       manualRegion: "",
     });
 
-    expect(content).toContain("test.describe('Components', () => {");
-    expect(content).toContain("  test.describe('CommentLine', () => {");
+    expect(content).toContain("describe('Components', () => {");
+    expect(content).toContain("  describe('CommentLine', () => {");
     expect(content).toContain("    test('Default', async ({ sharedPage, creevey }) => {");
     expect(content).not.toContain("describe('',");
   });
@@ -178,8 +178,8 @@ describe("renderScreenshotSpec", () => {
       manualRegion: "",
     });
 
-    expect(content).toContain("test.describe('Foo\\\\ Bar\\'s', () => {");
-    expect(content).toContain("  test.describe('Widget\\\\', () => {");
+    expect(content).toContain("describe('Foo\\\\ Bar\\'s', () => {");
+    expect(content).toContain("  describe('Widget\\\\', () => {");
     expect(content).toContain("    test('It\\'s alive\\\\', async ({ sharedPage, creevey }) => {");
   });
 });
@@ -226,7 +226,7 @@ describe("generateScreenshots", () => {
         .replace("/__stories__/", "/__screenshots__/")
         .replace(".stories.tsx", ".screenshots.spec.ts"),
     );
-    expect(outputs[0]?.content).toContain("test.describe('Button'");
+    expect(outputs[0]?.content).toContain("describe('Button'");
   });
 
   it("emits a test for every story regardless of creevey skip in source", async () => {
@@ -349,8 +349,8 @@ describe("generateScreenshots", () => {
 
     expect(outputs).toHaveLength(1);
     expect(outputs[0]?.outputPath).toBe(storyFilePath.replace(/\.stories\.tsx$/u, ".spec.ts"));
-    expect(outputs[0]?.content).toContain("test.describe('Components', () => {");
-    expect(outputs[0]?.content).toContain("  test.describe('Button', () => {");
+    expect(outputs[0]?.content).toContain("describe('Components', () => {");
+    expect(outputs[0]?.content).toContain("  describe('Button', () => {");
     expect(outputs[0]?.content).toContain(
       "await switchStory(sharedPage, 'components-button--default')",
     );

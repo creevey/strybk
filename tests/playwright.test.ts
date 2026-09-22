@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { test, expect as strybkExpect, switchStory } from "../src/playwright/index.js";
+import {
+  describe as strybkDescribe,
+  expect as strybkExpect,
+  switchStory,
+  test,
+} from "../src/playwright/index.js";
 
 describe("playwright public surface", () => {
   it("exports test and expect directly", () => {
@@ -10,5 +15,10 @@ describe("playwright public surface", () => {
 
   it("re-exports switchStory", () => {
     expect(typeof switchStory).toBe("function");
+  });
+
+  it("exports describe bound to test.describe", () => {
+    expect(typeof strybkDescribe).toBe("function");
+    expect(strybkDescribe).toBe(test.describe);
   });
 });

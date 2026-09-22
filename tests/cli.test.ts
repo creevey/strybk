@@ -125,6 +125,6 @@ describe("runCli", () => {
     expect(outputs[0]?.outputPath).toBe(
       realpathSync(storyFilePath).replace(/\.stories\.tsx$/u, ".spec.ts"),
     );
-    expect(outputs[0]?.content).toContain("test.describe('Button'");
+    expect(outputs[0]?.content).toContain("describe('Button'");
   });
 });

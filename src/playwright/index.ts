@@ -6,3 +6,4 @@ const fixtures = createStrybkFixtures();
 
 export const test = fixtures.test;
 export const expect = fixtures.expect;
+export const describe = fixtures.test.describe;

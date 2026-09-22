@@ -5,8 +5,8 @@
 
 ## 2. Package-owned describe export and generated output
 
-- [ ] 2.1 Extend `tests/playwright.test.ts` to assert the Playwright runtime exports a callable `describe` bound to `test.describe`, then export it from `src/playwright/index.ts` and `src/index.ts`. Verification: `bun test tests/playwright.test.ts && bun run typecheck`
-- [ ] 2.2 Update expected generated output in `tests/generate.test.ts` and `tests/cli.test.ts` to the new import line (`describe, test, expect, switchStory`) and `describe(...)` nesting; watch them fail, then implement the renderer change in `src/generate/render.ts`. Verification: `bun test tests/generate.test.ts && bun test tests/cli.test.ts && bun run typecheck`
+- [x] 2.1 Extend `tests/playwright.test.ts` to assert the Playwright runtime exports a callable `describe` bound to `test.describe`, then export it from `src/playwright/index.ts` and `src/index.ts`. Verification: `bun test tests/playwright.test.ts && bun run typecheck`
+- [x] 2.2 Update expected generated output in `tests/generate.test.ts` and `tests/cli.test.ts` to the new import line (`describe, test, expect, switchStory`) and `describe(...)` nesting; watch them fail, then implement the renderer change in `src/generate/render.ts`. Verification: `bun test tests/generate.test.ts && bun test tests/cli.test.ts && bun run typecheck`
 
 ## 3. Portable locator subset
 

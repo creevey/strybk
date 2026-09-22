@@ -42,7 +42,7 @@ const wrapInDescribes = (segments: string[], tests: string, depth: number): stri
   }
 
   return [
-    `${indent}test.describe('${escapeSingleQuotes(segment)}', () => {`,
+    `${indent}describe('${escapeSingleQuotes(segment)}', () => {`,
     wrapInDescribes(rest, tests, depth + 1),
     `${indent}});`,
   ].join("\n");
@@ -59,5 +59,5 @@ export function renderScreenshotSpec(args: {
   const tests = args.stories.map((story) => renderTest(story, segments.length)).join("\n\n");
   const body = wrapInDescribes(segments, tests, 0);
 
-  return `import { test, expect, switchStory } from '@crvy/strybk';\n\n// @generated-begin ${generatedRegionName}\n${body}\n// @generated-end ${generatedRegionName}\n\n${args.manualRegion}`;
+  return `import { describe, test, expect, switchStory } from '@crvy/strybk';\n\n// @generated-begin ${generatedRegionName}\n${body}\n// @generated-end ${generatedRegionName}\n\n${args.manualRegion}`;
 }
