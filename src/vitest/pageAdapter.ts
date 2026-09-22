@@ -6,11 +6,13 @@
  */
 
 import type { Locator } from "vitest/browser";
-import { locators, page } from "vitest/browser";
+import { locators, page, userEvent } from "vitest/browser";
 
 import type { StorybookGlobals } from "../config.js";
 import type { StoriesRaw } from "../storybook/creeveyParams.js";
 import { updateGlobalsInPage } from "../storybook/inPage.js";
+import type { PortableLocator, PortableUserEvent } from "./locatorAdapter.js";
+import { createPortableLocator } from "./locatorAdapter.js";
 import { getSharedPreview, getSharedPreviewElement } from "./preview.js";
 import { waitForTimeout } from "./wait.js";
 
@@ -36,9 +38,13 @@ export interface StrybkLocator {
 }
 
 export interface StrybkPage {
-  locator(selector: string): StrybkLocator;
+  locator(selector: string): PortableLocator<Locator>;
   waitForTimeout(ms: number): Promise<void>;
 }
+
+const userEventFor: PortableUserEvent<Locator> = {
+  type: (locator, text, options) => userEvent.type(locator, text, options),
+};
 
 const requireSharedIframe = (): HTMLIFrameElement => {
   const iframe = getSharedPreviewElement();
@@ -54,10 +60,14 @@ export const isStrybkLocator = (value: unknown): value is StrybkLocator =>
   typeof value === "object" && value !== null && "selector" in value && "vitestLocator" in value;
 
 export class StrybkPageAdapter implements StrybkPage {
-  locator(selector: string): StrybkLocator {
+  locator(selector: string): PortableLocator<Locator> {
     const frame = page.frameLocator(page.elementLocator(requireSharedIframe()));
 
-    return { selector, vitestLocator: frame.getByCSS(selector) };
+    return createPortableLocator({
+      selector,
+      vitestLocator: frame.getByCSS(selector),
+      userEvent: userEventFor,
+    });
   }
 
   load(): Promise<void> {

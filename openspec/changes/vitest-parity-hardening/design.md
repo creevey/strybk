@@ -52,12 +52,15 @@ Rationale: the package — not the runner's collector shape — owns the generat
 
 `StrybkPageAdapter.locator()` returns an adapter instance (class, not the current plain object) whose methods delegate to the wrapped vitest locator:
 
-| Portable method                                                | Vitest mapping                                                                                                                   |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `click`, `dblClick`, `hover`, `fill`, `clear`, `press`, `type` | same-named vitest locator method, options passed through                                                                         |
-| `nth`, `first`, `last`                                         | same-named vitest locator method, re-wrapped so masks and captures keep the adapter shape                                        |
-| `locator(selector)`                                            | `vitestLocator.getByCSS(selector)` — the registered selector engine scopes the nested search                                     |
-| `dragTo(target, options)`                                      | `vitestLocator.dropTo(target.vitestLocator, options)`; options typed as `{ sourcePosition?, targetPosition?, force?, timeout? }` |
+| Portable method                               | Vitest mapping                                                                                                                                                                          |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `click`, `dblClick`, `hover`, `fill`, `clear` | same-named vitest locator method, options passed through                                                                                                                                |
+| `press`, `type`                               | `userEvent.type(vitestLocator, ...)`: `type` passes the text through; `press` converts Playwright key chords to testing-library keyboard syntax (`Control+A` → `{Control>}A{/Control}`) |
+| `nth`, `first`, `last`                        | same-named vitest locator method, re-wrapped so masks and captures keep the adapter shape                                                                                               |
+| `locator(selector)`                           | `vitestLocator.getByCSS(selector)` — the registered selector engine scopes the nested search                                                                                            |
+| `dragTo(target, options)`                     | `vitestLocator.dropTo(target.vitestLocator, options)`; options typed as `{ sourcePosition?, targetPosition?, force?, timeout? }`                                                        |
+
+`press` and `type` cannot delegate to the locator: vitest locators expose neither across 4.0–4.1 (verified against @vitest/browser 4.0.18 and the installed 4.1.11). The adapter therefore takes an injected `userEvent` dependency — the class in `pageAdapter.ts` supplies the real `userEvent` from `vitest/browser`.
 
 `isStrybkLocator` keeps its structural check (`selector` + `vitestLocator`) so masks and `toPreviewLocator` continue to work with nested/`nth` locators. The portable construction is extracted into `src/vitest/locatorAdapter.ts`, a factory over a structural locator interface that imports types only, so `bun test` drives it with a fake locator while the class in `pageAdapter.ts` stays the vitest-coupled wiring. Alternative rejected: a `Proxy` that forwards every `Locator` member — it hides the boundary, cannot be typed honestly against Playwright's `Locator`, and would let consumers use APIs that are not portable. `sharedPage.mouse` is explicitly not emulated; the README documents `locator('body').hover({ position })` as the portable replacement for pointer positioning (the playwright provider augments hover options with Playwright's).
 

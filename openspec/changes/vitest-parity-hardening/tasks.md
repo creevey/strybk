@@ -10,8 +10,8 @@
 
 ## 3. Portable locator subset
 
-- [ ] 3.1 Write failing tests for the portable locator adapter in `tests/vitest-locator.test.ts` against a fake vitest locator (each method delegates with options; `nth`/`first`/`last` re-wrap; `locator()` scopes through `getByCSS`; `dragTo` maps to `dropTo` with Playwright-style positions), then implement `src/vitest/locatorAdapter.ts` as a types-only factory. Verification: `bun test tests/vitest-locator.test.ts && bun run typecheck`
-- [ ] 3.2 Wire `StrybkPageAdapter.locator()` to the factory, keep `isStrybkLocator` recognizing nested/`nth` results, and confirm masks and capture targets still resolve. Verification: `bun test tests/vitest-page-adapter.test.ts && bun test tests/vitest-assertion.test.ts && bun run typecheck`
+- [x] 3.1 Write failing tests for the portable locator adapter in `tests/vitest-locator.test.ts` against a fake vitest locator (each method delegates with options; `nth`/`first`/`last` re-wrap; `locator()` scopes through `getByCSS`; `dragTo` maps to `dropTo` with Playwright-style positions), then implement `src/vitest/locatorAdapter.ts` as a types-only factory. Verification: `bun test tests/vitest-locator.test.ts && bun run typecheck`
+- [x] 3.2 Wire `StrybkPageAdapter.locator()` to the factory, keep `isStrybkLocator` recognizing nested/`nth` results, and confirm masks and capture targets still resolve. Verification: `bun test tests/vitest-page-adapter.test.ts && bun test tests/vitest-assertion.test.ts && bun run typecheck`
 
 ## 4. Minimum-version browser harness
 
