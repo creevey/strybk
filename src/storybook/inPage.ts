@@ -24,6 +24,10 @@ export interface StorybookChannelWindow {
 
 export interface StorybookPreviewWindow {
   __STORYBOOK_PREVIEW__?: {
+    /** Resolves once Storybook has loaded the story index (Storybook 8+). */
+    ready?: () => Promise<unknown>;
+    /** Pre-`ready()` name for the same promise (older Storybook previews). */
+    initializationPromise?: Promise<unknown>;
     extract?: () => unknown;
   };
 }
@@ -130,3 +134,25 @@ export const updateGlobalsInPage = ({ win, globals }: UpdateGlobalsArgs): void =
 
 export const extractPreviewState = (win?: StorybookPreviewWindow): Promise<unknown> =>
   Promise.resolve((win ?? window).__STORYBOOK_PREVIEW__?.extract?.());
+
+/**
+ * In-page predicate for `page.waitForFunction`: resolves `true` once the
+ * Storybook preview finished initializing. `extract()` throws
+ * "Called `Preview.extract()` before initialization" until then, even though
+ * `#storybook-root` is already in the static iframe markup.
+ */
+export const waitForPreviewReady = async (): Promise<boolean> => {
+  const preview = window.__STORYBOOK_PREVIEW__;
+
+  if (preview === undefined) {
+    return false;
+  }
+
+  const ready = preview.ready?.() ?? preview.initializationPromise;
+
+  if (ready !== undefined) {
+    await ready;
+  }
+
+  return true;
+};
